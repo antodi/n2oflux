@@ -1,0 +1,306 @@
+calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,offset_k="json",opt_db="no",use_json_parameters=0){
+
+  groups <- unique(interaction(data$date,data$LABEL))
+
+  data_n2o <- c()
+
+  for (i in 1:length(groups) ){
+    # print(i)
+    #subset plot data
+    date <- strsplit(as.character(groups[i]),"\\.")[[1]][1]
+    LABEL <- strsplit(as.character(groups[i]),"\\.")[[1]][2]
+    sub_sam <- data[which(data$date == date & data$LABEL == LABEL ),]
+
+    #if number of observation below stop_time, then set stop_time to the number of obs
+    if(nrow(sub_sam)<stop_time_ag){stop_time<-nrow(sub_sam)}else{stop_time<-stop_time_ag}
+
+    #calculate total volume chamber
+    #li870 volume = 33.5 cm3
+    #li7820 volume = 28 cm3
+    #li7810 volume = 28 cm3
+
+    if(offset_k == "json"){
+      offset <- unique(sub_sam$Offset) } else{ offset <- offset} #cm
+
+    #optimize deadband
+    if(length(sub_sam$N2O_DRY>90) & table(is.na(sub_sam$N2O_DRY))[["FALSE"]] > 89){
+      if(str_detect(opt_db,"[0-9]")==TRUE){
+        min_db <- strsplit(opt_db,"-")[[1]][1]
+        max_db <- strsplit(opt_db,"-")[[1]][2]
+        res_tab <-c()
+        coef_reg <-c()
+        for(i in min_db:max_db){
+
+          sub_sam_1 <- sub_sam[c(1:i),]
+          sub_sam_2 <- sub_sam[c(i+1:nrow(sub_sam)),]
+
+          lm_beg <- lm(N2O_DRY~ETIME,data=sub_sam_1)
+          lm_end <- lm(N2O_DRY~ETIME,data=sub_sam_2)
+
+          beg <- round(summary(lm_beg)$r.squared,3)
+          end <- round(summary(lm_end)$r.squared,3)
+
+          res <- data.frame(beg,end,"deadband"=i)
+          res_tab <- rbind(res_tab,res)
+
+        }
+
+        res_tab$opt <- res_tab$beg+res_tab$end
+
+        #pick value with max R2 for both regression
+        deadband <- res_tab$deadband[which.max(res_tab$opt)] } #sec
+
+      #check if first regression is positive or negative
+      sub_sam_1 <- sub_sam[c(1:deadband),]
+      lm_beg <- lm(N2O_DRY~ETIME,data=sub_sam_1)
+
+      if( coef(lm_beg)[[2]] > 0){ deadband <- 30 }
+    }else{deadband<-deadband}
+
+    Scham <- unique(sub_sam$Area) #cm2
+    ChamVolume <- unique(sub_sam$ChamVolume) #cm3
+    IrgaVolume <- unique(sub_sam$IrgaVolume) # = analyzer volume (cm3) + tubing (cm) * tubing area (0.158 cm2)
+    Vcham<- Scham*offset + IrgaVolume + ChamVolume #cm3
+
+    if(deadband_c>0){Vcham <- Vcham+unique(sub_sam$IrgaVolume_li870) }
+
+    #set constant
+    R <- 8.314 #gas constant (Pa m3 K-1 mol-1)
+
+    #get time measurement begins
+    time <- strsplit(sub_sam$DATE_TIME[1]," ")[[1]][2]
+
+    #get remark
+    Remark <- unique(sub_sam$Remark)
+
+    #check if first 10 sec are usable
+    test<-c()
+    if(length(unique(is.na(sub_sam$ETIME[1:10]))) ==1 ){
+      if(unique(is.na(sub_sam$ETIME[1:10]))!=TRUE) {test <- "pass"}else{
+        test <- "fail" }
+    }
+
+
+    if(length(unique(is.na(sub_sam$ETIME[1:10]))) ==2 ){
+      if(table(is.na(sub_sam$ETIME[1:10]))["FALSE"]>6 ){test <- "pass"}else{
+        test <- "fail" }
+    }
+
+    if(test=="pass"){
+
+      #get initial values
+      P  <- summary(lm(data=sub_sam[1:10,], PA~ ETIME))$coef[1,1]
+      W0 <- summary(lm(data=sub_sam[1:10,], H2O~ ETIME))$coef[1,1]
+      T0 <- summary(lm(data=sub_sam[1:10,], TA~ ETIME))$coef[1,1]
+      C0 <- summary(lm(data=sub_sam[1:10,], N2O_DRY~ ETIME))$coef[1,1]
+
+
+
+      #trim for n2o
+      sub_sam <- sub_sam[which(sub_sam$ETIME %in% c(c(1:stop_time)-1) ),] # select observation length
+      sub_sam <- sub_sam[-which(sub_sam$ETIME %in% c(c(1:deadband)-1)  ) ,] # remove deadband
+
+      #extract chamber condition
+      TA_m <- mean(sub_sam$TA[which(sub_sam$TA<100)])
+      TS1_m <- mean(sub_sam$TS_1[which(sub_sam$TS_1<100)])
+      EC2_m <- mean(sub_sam$EC_2[which(sub_sam$EC_2<1)])
+      SWC2_m <- mean(sub_sam$SWC_2[which(sub_sam$SWC_2<1)])
+      TS2_m <- mean(sub_sam$TS_2[which(sub_sam$TS_2<100)])
+
+      #extract diagnosis
+      DIAGNOSIS <- mean(sub_sam$DIAGNOSIS)
+
+      #calculate linear N2O flux
+      l_model <- lm(data=sub_sam, N2O_DRY~ ETIME)
+      FN2O_DRY_LIN_R2 <- summary(l_model)$r.squared
+      FN2O_DRY_LIN_RMSE <- sqrt(mean((sub_sam$N2O_DRY - predict(l_model,x=sub_sam$ETIME))^2))
+
+      FN2O_DRY_LIN_dNdt <- summary(l_model)$coef[2,1]
+
+      FN2O_DRY_LIN <- (10*Vcham*P*(1-W0/1000))/(R*Scham*(T0+273.15))* FN2O_DRY_LIN_dNdt
+
+
+      # #calculate non-linear N2O flux
+      res_fm2 <- nls2(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)), #get better starting values for nls
+                      start = list(Cx=c(350,500), alpha_v=c(0.0001,0.1),ETIME0=c(5,50)), alg = "brute",data=sub_sam)
+
+      tryCatch(  #if parameters cannot be estimated, then use dC/dt from linear regression
+        { nl_model = nlsLM(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)),
+                           start=coef(res_fm2),
+                           control = nls.lm.control(maxiter=100),
+                           data = sub_sam)
+
+
+        FN2O_DRY_nLIN_R2 <- 1 - (deviance(nl_model)/sum((sub_sam$N2O_DRY-mean(sub_sam$N2O_DRY))^2))
+        FN2O_DRY_nLIN_RMSE <- sqrt(mean((sub_sam$N2O_DRY - predict(nl_model,x=sub_sam$ETIME))^2))
+
+        Cx <- coef(nl_model)[[1]]
+        alpha_v <- coef(nl_model)[[2]]
+        ETIME0 <- coef(nl_model)[[3]]
+
+        dN_dtp <- alpha_v*(Cx-C0)*exp(-alpha_v*(sub_sam$ETIME[nrow(sub_sam)]-ETIME0 ) )
+        FN2O_DRY_nLIN_dNdt0 <- alpha_v*(Cx-C0)  #slope at t=t0
+        },
+        error=function(e){
+          FN2O_DRY_nLIN_dNdt0 <<- FN2O_DRY_LIN_dNdt
+          FN2O_DRY_nLIN_R2 <<- 0
+          FN2O_DRY_nLIN_RMSE <<-0
+          Cx <<- 99999
+          alpha_v <<- 99999
+          ETIME0 <<-99999
+        }
+      )
+
+
+      if(use_json_parameters == 1){
+        # Use values from json file
+        Cx <- unique(sub_sam$C_x)
+        alpha_v <- unique(sub_sam$alpha_v)
+        ETIME0 <- unique(sub_sam$t_0)
+        C0 <- unique(sub_sam$C_0)
+
+        dN_dtp <- alpha_v*(Cx-C0)*exp(-alpha_v*(sub_sam$ETIME[nrow(sub_sam)]-ETIME0 ) )
+        FN2O_DRY_nLIN_dNdt0 <- alpha_v*(Cx-C0)  #slope at t=t0
+      }
+
+      FN2O_DRY_nLIN <- (10*Vcham*P*(1-W0/1000))/(R*Scham*(T0+273.15))* FN2O_DRY_nLIN_dNdt0
+
+    }else{
+
+      var_n <- c("TA_m", "TS1_m", "EC2_m", "SWC2_m", "TS2_m",
+                 "FN2O_DRY_LIN_dNdt", "FN2O_DRY_LIN", "FN2O_DRY_LIN_R2", "FN2O_DRY_LIN_RMSE",
+                 "FN2O_DRY_nLIN_dNdt0", "FN2O_DRY_nLIN","FN2O_DRY_nLIN_R2", "FN2O_DRY_nLIN_RMSE",
+                 "Cx","alpha_v","ETIME0")
+
+      for (i in seq(var_n)) assign(var_n[i],9999)
+
+    }
+
+
+    if( deadband_c > 0 ){
+
+      #trim for co2
+      sub_sam <- data[which(data$date == date & data$LABEL == LABEL ),]
+
+      sub_sam <- sub_sam[which(sub_sam$ETIME_co2 %in% c(c(1:stop_time)-1) ),] # select observation length
+      sub_sam <- sub_sam[-which(sub_sam$ETIME_co2 %in% c(c(1:deadband_c)-1)  ) ,] # remove deadband
+
+      W0_co2 <- summary(lm(data=sub_sam[1:10,], H2O_co2~ ETIME_co2))$coef[1,1]
+      C0_co2 <- summary(lm(data=sub_sam[1:10,], CO2_DRY~ ETIME_co2))$coef[1,1]
+
+      #calculate linear CO2 flux
+      l_model <- lm(data=sub_sam, CO2_DRY~ ETIME_co2)
+      FCO2_DRY_LIN_R2 <- summary(l_model)$r.squared
+      FCO2_DRY_LIN_RMSE <- sqrt(mean((sub_sam$CO2_DRY - predict(l_model,x=sub_sam$ETIME_co2))^2))
+
+      FCO2_DRY_LIN_dNdt <- summary(l_model)$coef[2,1]
+
+      FCO2_DRY_LIN <- (10*Vcham*P*(1-W0_co2/1000))/(R*Scham*(T0+273.15))* FCO2_DRY_LIN_dNdt
+
+
+      # #calculate non-linear CO2 flux
+      res_fm3 <- nls2(CO2_DRY ~ Cx_co2 + (C0_co2-Cx_co2)*exp( -alpha_co2*(ETIME_co2-ETIME0_co2)), #get better starting values for nls
+                      start = list(Cx_co2=c(3000,5000), alpha_co2=c(0.0001,0.1),ETIME0_co2=c(5,50)), alg = "brute",data=sub_sam)
+
+      tryCatch(  #if parameters cannot be estimated, then use dC/dt from linear regression
+        { nl_model = nlsLM(CO2_DRY ~ Cx_co2 + (C0_co2-Cx_co2)*exp( -alpha_co2*(ETIME_co2-ETIME0_co2)),
+                           start=coef(res_fm3),
+                           control = nls.lm.control(maxiter=100),
+                           data = sub_sam)
+
+
+        FCO2_DRY_nLIN_R2 <- 1 - (deviance(nl_model)/sum((sub_sam$CO2_DRY-mean(sub_sam$CO2_DRY))^2))
+        FCO2_DRY_nLIN_RMSE <- sqrt(mean((sub_sam$CO2_DRY - predict(nl_model,x=sub_sam$ETIME_co2))^2))
+
+        Cx_co2 <- coef(nl_model)[[1]]
+        alpha_co2 <- coef(nl_model)[[2]]
+        ETIME0_co2 <- coef(nl_model)[[3]]
+
+        dN_dtp <- alpha_co2*(Cx_co2-C0_co2)*exp(-alpha_co2*(sub_sam$ETIME_co2[nrow(sub_sam)]-ETIME0_co2 ) )
+        FCO2_DRY_nLIN_dNdt0 <- alpha_co2*(Cx_co2-C0_co2)  #slope at t=t0
+        },
+        error=function(e){
+          FCO2_DRY_nLIN_dNdt0 <<- FCO2_DRY_LIN_dNdt
+          FCO2_DRY_nLIN_R2 <<- 0
+          FCO2_DRY_nLIN_RMSE <<-0
+          Cx_co2 <<- 99999
+          alpha_co2 <<- 99999
+          ETIME0_co2 <<-99999
+        }
+      )
+
+
+      if(use_json_parameters == 1){
+        # Use values from json file
+        Cx_co2 <- unique(sub_sam$C_x_co2)
+        alpha_co2 <- unique(sub_sam$alpha_co2)
+        ETIME0_co2 <- unique(sub_sam$t_0_co2)
+        C0_co2 <- unique(sub_sam$C_0_co2)
+
+        dN_dtp <- alpha_co2*(Cx_co2-C0_co2)*exp(-alpha_co2*(sub_sam$ETIME_co2[nrow(sub_sam)]-ETIME0_co2 ) )
+        FCO2_DRY_nLIN_dNdt0 <- alpha_co2*(Cx_co2-C0_co2)  #slope at t=t0
+      }
+
+      FCO2_DRY_nLIN <- (10*Vcham*P*(1-W0_co2/1000))/(R*Scham*(T0+273.15))* FCO2_DRY_nLIN_dNdt0
+
+      #compile table
+      plot_data <- data.frame(date, time, LABEL,  stop_time, deadband, offset, DIAGNOSIS,Remark,
+                              TA_m, TS1_m, EC2_m, SWC2_m, TS2_m,
+                              FN2O_DRY_LIN_dNdt, FN2O_DRY_LIN, FN2O_DRY_LIN_R2, FN2O_DRY_LIN_RMSE,
+                              FN2O_DRY_nLIN_dNdt0, FN2O_DRY_nLIN,FN2O_DRY_nLIN_R2, FN2O_DRY_nLIN_RMSE,
+                              Cx,alpha_v,ETIME0,
+                              FCO2_DRY_LIN_dNdt, FCO2_DRY_LIN, FCO2_DRY_LIN_R2, FCO2_DRY_LIN_RMSE,
+                              FCO2_DRY_nLIN_dNdt0, FCO2_DRY_nLIN, FCO2_DRY_nLIN_R2, FCO2_DRY_nLIN_RMSE,
+                              Cx_co2,alpha_co2,ETIME0_co2)
+
+    }else{
+
+      #compile table
+      plot_data <- data.frame(date, time, LABEL, stop_time, deadband, offset, DIAGNOSIS,Remark,
+                              TA_m, TS1_m, EC2_m, SWC2_m, TS2_m,
+                              FN2O_DRY_LIN_dNdt, FN2O_DRY_LIN, FN2O_DRY_LIN_R2, FN2O_DRY_LIN_RMSE,
+                              FN2O_DRY_nLIN_dNdt0, FN2O_DRY_nLIN,FN2O_DRY_nLIN_R2, FN2O_DRY_nLIN_RMSE,
+                              Cx,alpha_v,ETIME0 )
+    }
+
+
+
+
+    data_n2o <- rbind(data_n2o, plot_data)
+
+  }
+
+  #select best fit based on RMSE
+  data_n2o$F_N2O<-c()
+  data_n2o$best_model<-c()
+  for( i in 1:nrow(data_n2o)){
+
+    if(data_n2o$FN2O_DRY_LIN_RMSE[i] <= data_n2o$FN2O_DRY_nLIN_RMSE[i]){
+      data_n2o$F_N2O[i] <- data_n2o$FN2O_DRY_LIN[i]
+      data_n2o$best_model[i] <- "LIN"
+    }else{
+      data_n2o$F_N2O[i] <- data_n2o$FN2O_DRY_nLIN[i]
+      data_n2o$best_model[i] <- "nLIN"
+    }
+  }
+
+
+  if( deadband_c > 0 ){
+
+    #select best fit based on RMSE
+    data_n2o$F_CO2<-c()
+    data_n2o$best_model_co2<-c()
+    for( i in 1:nrow(data_n2o)){
+
+      if(data_n2o$FCO2_DRY_LIN_RMSE[i] <= data_n2o$FCO2_DRY_nLIN_RMSE[i]){
+        data_n2o$F_CO2[i] <- data_n2o$FCO2_DRY_LIN[i]
+        data_n2o$best_model_co2[i] <- "LIN"
+      }else{
+        data_n2o$F_CO2[i] <- data_n2o$FCO2_DRY_nLIN[i]
+        data_n2o$best_model_co2[i] <- "nLIN"
+      }
+    }
+  }
+
+  return(data_n2o)
+}
