@@ -16,6 +16,7 @@ Imports:
   stringr,
   nls2,
   lme4,
-  lmerTest
+  lmerTest,
+  minpack.lm
 Depends: 
     R (>= 2.10)
