@@ -2,11 +2,6 @@
 
 set.seed(1)
 
-n2o_1 <- pexp(1:120,rate=0.025)
-n2o_1 <- n2o_1[order(n2o_1)]+runif(120,-0.01,0.01)+377
-
-n2o_2<- 379-5*exp(-0.01*(1:120-40))+runif(120,-0.1,0.1)
-
 example_n2o_data <- rbind (
   data.frame(
     "TIME"="12:00:00",
@@ -61,7 +56,7 @@ example_n2o_data <- rbind (
     "SWC_2"=0.282,
     "TS_2"=23.7,
     "H2O"= c(seq(27.5,30,c((30-27.5)/119))+runif(120,-0.2,0.2)),
-    "N2O_DRY" =n2o_1 ,
+    "N2O_DRY" =379-4*exp(-0.01*(1:120-20))+runif(120,-0.1,0.1) ,
     "DIAGNOSIS"=0
   ), data.frame(
     "TIME"="11:00:00",
@@ -117,7 +112,7 @@ example_n2o_data <- rbind (
     "SWC_2"=0.282,
     "TS_2"=23.7,
     "H2O"= c(seq(27.5,30,c((30-27.5)/119))+runif(120,-0.2,0.2)),
-    "N2O_DRY" =n2o_2 ,
+    "N2O_DRY" =379-5*exp(-0.01*(1:120-40))+runif(120,-0.1,0.1) ,
     "DIAGNOSIS"=0
   )
 )
