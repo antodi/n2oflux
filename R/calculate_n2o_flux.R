@@ -283,6 +283,7 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
       data_n2o$best_model[i] <- "nLIN"
     }
   }
+  data_n2o$best_model[which(data_n2o$FN2O_DRY_nLIN_RMSE==0)]<-"LIN"
 
 
   if( deadband_c > 0 ){
@@ -300,6 +301,8 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
         data_n2o$best_model_co2[i] <- "nLIN"
       }
     }
+    data_n2o$best_model[which(data_n2o$FCO2_DRY_nLIN_RMSE==0)]<-"LIN"
+
   }
 
   return(data_n2o)
