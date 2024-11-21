@@ -1,5 +1,8 @@
 #' Calculate N2O fluxes from processed json files
 #'
+#' This function calculate N2O fluxes using the table created by process_json_files() using a linear and nonlinear regression.
+#' It also allows to optimize the deadband within a given range and select the best fit between the two regressions.
+#'
 #' @param data
 #' @param deadband
 #' @param deadband_c
