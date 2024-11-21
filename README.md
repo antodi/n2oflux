@@ -15,6 +15,13 @@ You can install the development version of n2oflux from [GitHub](https://github.
 pak::pak("antodi/n2oflux")
 ```
 
+or 
+
+``` r
+# install.packages("devtools")
+install_github("antodi/n2oflux")
+```
+
 ## Example
 
 This is a basic example which shows you how to solve a common problem:
