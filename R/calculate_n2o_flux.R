@@ -1,24 +1,27 @@
 #' Calculate N2O fluxes from processed json files
 #'
-#' This function calculate N2O fluxes using the table created by process_json_files() using a linear and nonlinear regression.
-#' It also allows to optimize the deadband within a given range and select the best fit between the two regressions.
+#' This function calculate N2O fluxes using the table created by process_json_files function using a linear and nonlinear regression following the method described by Licor in the 8200 smart chamber manual. When the nonlinear function cannot be fit, the flux value for the linear regression is attributed by default.
+#' It also allows to optimize the deadband within a given range. Before steady mixing is attained, N2O concentration can decreases. The optimum deadband is the time (opt_db) at which N2O concentration ceases to decrease and starts increasing. The optimum deadband is found by fitting two linear regression at start-opt_db and opt_db-end with opt_db taking all values between the given range. The opt_db value maximizing the R2 for both regressions is the optimum deadband. In case both regressions are positive, opt_db defaults to the given deadband.
 #'
-#' @param data
-#' @param deadband
-#' @param deadband_c
-#' @param stop_time_ag
-#' @param offset_k
-#' @param opt_db
-#' @param use_json_parameters
+#' @param data The output from the process_json_files function.
+#' @param deadband The desired value (sec) for the deadband. N2O observations before that time will be discarded.
+#' @param deadband_c Use only if the json file contains CO2 data. The desired value (sec) for the deadband. CO2 observations before that time will be discarded. A value of 0 (default) will ignore this argument.
+#' @param stop_time_ag The duration of observation (sec).
+#' @param offset_k The value of the offset (cm) for the collar. If set to "json", the offset will be retrieved from the json file.
+#' @param opt_db The range at which the deadband should be optimized. For intance, if opt_db is set to '20-50', the optimum deadband will tested for all values between 20 and 50sec. The deadband won't be optimzed if set to 'no' (default).
 #'
-#' @return
+#' @return A table with calculated fluxes. The column 'deadband' will show the optimized deadband if requested. The dNdt, flux, R squared, and RMSE values for the linear and nonlinear regressions are reported in the column containing _LIN (for linear) or _nLIN (for nonlinear regression) in their header. The column F_N2O reports the flux for the best model.
 #' @export
 #'
 #' @examples
-#' calculate_n2o_flux()
-calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,offset_k="json",opt_db="no",use_json_parameters=0){
+#' head(example_n2o_data)
+#' n2o_flux<-calculate_n2o_flux(example_n2o_data)
+#' n2o_flux
+calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,offset_k="json",opt_db="no"){
 
   groups <- unique(interaction(data$date,data$LABEL))
+
+  db_default <- deadband
 
   data_n2o <- c()
 
@@ -72,7 +75,7 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
       sub_sam_1 <- sub_sam[c(1:deadband),]
       lm_beg <- lm(N2O_DRY~ETIME,data=sub_sam_1)
 
-      if( coef(lm_beg)[[2]] > 0){ deadband <- 30 }
+      if( coef(lm_beg)[[2]] > 0){ deadband <- db_default }
     }else{deadband<-deadband}
 
     Scham <- unique(sub_sam$Area) #cm2
@@ -170,16 +173,16 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
       )
 
 
-      if(use_json_parameters == 1){
-        # Use values from json file
-        Cx <- unique(sub_sam$C_x)
-        alpha_v <- unique(sub_sam$alpha_v)
-        ETIME0 <- unique(sub_sam$t_0)
-        C0 <- unique(sub_sam$C_0)
-
-        dN_dtp <- alpha_v*(Cx-C0)*exp(-alpha_v*(sub_sam$ETIME[nrow(sub_sam)]-ETIME0 ) )
-        FN2O_DRY_nLIN_dNdt0 <- alpha_v*(Cx-C0)  #slope at t=t0
-      }
+      # if(use_json_parameters == 1){
+      #   # Use values from json file
+      #   Cx <- unique(sub_sam$C_x)
+      #   alpha_v <- unique(sub_sam$alpha_v)
+      #   ETIME0 <- unique(sub_sam$t_0)
+      #   C0 <- unique(sub_sam$C_0)
+      #
+      #   dN_dtp <- alpha_v*(Cx-C0)*exp(-alpha_v*(sub_sam$ETIME[nrow(sub_sam)]-ETIME0 ) )
+      #   FN2O_DRY_nLIN_dNdt0 <- alpha_v*(Cx-C0)  #slope at t=t0
+      # }
 
       FN2O_DRY_nLIN <- (10*Vcham*P*(1-W0/1000))/(R*Scham*(T0+273.15))* FN2O_DRY_nLIN_dNdt0
 
@@ -248,16 +251,16 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
       )
 
 
-      if(use_json_parameters == 1){
-        # Use values from json file
-        Cx_co2 <- unique(sub_sam$C_x_co2)
-        alpha_co2 <- unique(sub_sam$alpha_co2)
-        ETIME0_co2 <- unique(sub_sam$t_0_co2)
-        C0_co2 <- unique(sub_sam$C_0_co2)
-
-        dN_dtp <- alpha_co2*(Cx_co2-C0_co2)*exp(-alpha_co2*(sub_sam$ETIME_co2[nrow(sub_sam)]-ETIME0_co2 ) )
-        FCO2_DRY_nLIN_dNdt0 <- alpha_co2*(Cx_co2-C0_co2)  #slope at t=t0
-      }
+      # if(use_json_parameters == 1){
+      #   # Use values from json file
+      #   Cx_co2 <- unique(sub_sam$C_x_co2)
+      #   alpha_co2 <- unique(sub_sam$alpha_co2)
+      #   ETIME0_co2 <- unique(sub_sam$t_0_co2)
+      #   C0_co2 <- unique(sub_sam$C_0_co2)
+      #
+      #   dN_dtp <- alpha_co2*(Cx_co2-C0_co2)*exp(-alpha_co2*(sub_sam$ETIME_co2[nrow(sub_sam)]-ETIME0_co2 ) )
+      #   FCO2_DRY_nLIN_dNdt0 <- alpha_co2*(Cx_co2-C0_co2)  #slope at t=t0
+      # }
 
       FCO2_DRY_nLIN <- (10*Vcham*P*(1-W0_co2/1000))/(R*Scham*(T0+273.15))* FCO2_DRY_nLIN_dNdt0
 

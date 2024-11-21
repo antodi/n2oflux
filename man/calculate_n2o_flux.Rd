@@ -10,17 +10,31 @@ calculate_n2o_flux(
   deadband_c = 0,
   stop_time_ag = 120,
   offset_k = "json",
-  opt_db = "no",
-  use_json_parameters = 0
+  opt_db = "no"
 )
 }
 \arguments{
-\item{use_json_parameters}{}
+\item{data}{The output from the process_json_files function.}
+
+\item{deadband}{The desired value (sec) for the deadband. N2O observations before that time will be discarded.}
+
+\item{deadband_c}{Use only if the json file contains CO2 data. The desired value (sec) for the deadband. CO2 observations before that time will be discarded. A value of 0 (default) will ignore this argument.}
+
+\item{stop_time_ag}{The duration of observation (sec).}
+
+\item{offset_k}{The value of the offset (cm) for the collar. If set to "json", the offset will be retrieved from the json file.}
+
+\item{opt_db}{The range at which the deadband should be optimized. For intance, if opt_db is set to '20-50', the optimum deadband will tested for all values between 20 and 50sec. The deadband won't be optimzed if set to 'no' (default).}
+}
+\value{
+A table with calculated fluxes. The column 'deadband' will show the optimized deadband if requested. The dNdt, flux, R squared, and RMSE values for the linear and nonlinear regressions are reported in the column containing _LIN (for linear) or _nLIN (for nonlinear regression) in their header. The column F_N2O reports the flux for the best model.
 }
 \description{
-This function calculate N2O fluxes using the table created by process_json_files() using a linear and nonlinear regression.
-It also allows to optimize the deadband within a given range and select the best fit between the two regressions.
+This function calculate N2O fluxes using the table created by process_json_files function using a linear and nonlinear regression following the method described by Licor in the 8200 smart chamber manual. When the nonlinear function cannot be fit, the flux value for the linear regression is attributed by default.
+It also allows to optimize the deadband within a given range. Before steady mixing is attained, N2O concentration can decreases. The optimum deadband is the time (opt_db) at which N2O concentration ceases to decrease and starts increasing. The optimum deadband is found by fitting two linear regression at start-opt_db and opt_db-end with opt_db taking all values between the given range. The opt_db value maximizing the R2 for both regressions is the optimum deadband. In case both regressions are positive, opt_db defaults to the given deadband.
 }
 \examples{
-calculate_n2o_flux()
+head(example_n2o_data)
+n2o_flux<-calculate_n2o_flux(example_n2o_data)
+n2o_flux
 }

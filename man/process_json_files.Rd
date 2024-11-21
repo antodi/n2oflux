@@ -7,10 +7,13 @@
 process_json_files(filepath)
 }
 \arguments{
-\item{filepath}{}
+\item{filepath}{Path to the json file. This argument can also contain multiple paths.}
+}
+\value{
+A table containing all the observations and informations from the json file.
 }
 \description{
-Processing json files from the Licor 8200 Smart Chamber
+This function process the json file from the Licor 8200 Smart Chamber and return the result as a table that can be easily read and processed by R.
 }
 \examples{
 process_json_files("filepath")

@@ -1,9 +1,11 @@
 
 #' Processing json files from the Licor 8200 Smart Chamber
 #'
-#' @param filepath
+#' This function process the json file from the Licor 8200 Smart Chamber and return the result as a table that can be easily read and processed by R.
 #'
-#' @return
+#' @param filepath Path to the json file. This argument can also contain multiple paths.
+#'
+#' @return A table containing all the observations and informations from the json file.
 #' @export
 #'
 #' @examples
