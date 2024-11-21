@@ -1,3 +1,18 @@
+#' Calculate N2O fluxes from processed json files
+#'
+#' @param data
+#' @param deadband
+#' @param deadband_c
+#' @param stop_time_ag
+#' @param offset_k
+#' @param opt_db
+#' @param use_json_parameters
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' calculate_n2o_flux()
 calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,offset_k="json",opt_db="no",use_json_parameters=0){
 
   groups <- unique(interaction(data$date,data$LABEL))

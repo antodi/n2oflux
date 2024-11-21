@@ -1,3 +1,13 @@
+
+#' Processing json files from the Licor 8200 Smart Chamber
+#'
+#' @param filepath
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' process_json_files("filepath")
 process_json_files = function(filepath) {
 
   data_n2o_obs<-c()
