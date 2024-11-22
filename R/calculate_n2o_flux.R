@@ -10,7 +10,7 @@
 #' @param offset_k The value of the offset (cm) for the collar. If set to "json", the offset will be retrieved from the json file.
 #' @param opt_db The range at which the deadband should be optimized. For intance, if opt_db is set to '20-50', the optimum deadband will tested for all values between 20 and 50sec. The deadband won't be optimzed if set to 'no' (default).
 #'
-#' @return A table with calculated fluxes. The column 'deadband' will show the optimized deadband if requested. The dNdt, flux, R squared, and RMSE values for the linear and nonlinear regressions are reported in the column containing _LIN (for linear) or _nLIN (for nonlinear regression) in their header. The column F_N2O reports the flux for the best model.
+#' @return A list containing; (1) data_n2o, the calculated fluxes. The column 'deadband' will show the optimized deadband if requested. The dNdt, flux, R squared, and RMSE values for the linear and nonlinear regressions are reported in the column containing _LIN (for linear) or _nLIN (for nonlinear regression) in their header. The column F_N2O reports the flux for the best model. (2) linear_model_n2o, the results for the linear regression. (3) nonlinear_model_n2o, the results for the nonlinear regression.
 #' @export
 #'
 #' @examples
@@ -23,7 +23,10 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
 
   db_default <- deadband
 
-  data_n2o <- c()
+  res_n2o_flux <- list()
+  data_n2o<-c()
+  linear_model_n2o <-list()
+  nonlinear_model_n2o <-list()
 
   for (i in 1:length(groups) ){
     # print(i)
@@ -133,6 +136,9 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
 
       #calculate linear N2O flux
       l_model <- lm(data=sub_sam, N2O_DRY~ ETIME)
+      linear_model_n2o[[i]]<-l_model
+      names(linear_model_n2o)[i]<-as.character(groups[i])
+
       FN2O_DRY_LIN_R2 <- summary(l_model)$r.squared
       FN2O_DRY_LIN_RMSE <- sqrt(mean((sub_sam$N2O_DRY - predict(l_model,x=sub_sam$ETIME))^2))
 
@@ -151,6 +157,8 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
                            control = nls.lm.control(maxiter=100),
                            data = sub_sam)
 
+        nonlinear_model_n2o[[i]]<-nl_model
+        names(nonlinear_model_n2o)[i]<-as.character(groups[i])
 
         FN2O_DRY_nLIN_R2 <- 1 - (deviance(nl_model)/sum((sub_sam$N2O_DRY-mean(sub_sam$N2O_DRY))^2))
         FN2O_DRY_nLIN_RMSE <- sqrt(mean((sub_sam$N2O_DRY - predict(nl_model,x=sub_sam$ETIME))^2))
@@ -169,6 +177,9 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
           Cx <<- 99999
           alpha_v <<- 99999
           ETIME0 <<-99999
+
+          nonlinear_model_n2o[[i]]<-"NULL"
+          names(nonlinear_model_n2o)[i]<-as.character(groups[i])
         }
       )
 
@@ -326,5 +337,9 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
 
   }
 
-  return(data_n2o)
+  res_n2o_flux$data_n2o <- data_n2o
+  res_n2o_flux$linear_model_n2o<-linear_model_n2o
+  res_n2o_flux$nonlinear_model_n2o<-nonlinear_model_n2o
+
+  return(res_n2o_flux)
 }
