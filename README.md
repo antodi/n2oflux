@@ -13,7 +13,7 @@ You can install the development version of n2oflux from [GitHub](https://github.
 
 ``` r
 # install.packages("devtools") #install the devtools package if necessary
-library("devtools")
+library(devtools)
 install_github("antodi/n2oflux")
 ```
 
