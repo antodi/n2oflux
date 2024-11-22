@@ -18,12 +18,20 @@ install_github("antodi/n2oflux")
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
-
 ``` r
+#load package
 library(n2oflux)
+
+#store path
 PATH<- c("C:/Users/YOURNAME/Documents/file.json")
+
+#process json file
 n2o_obs <- process_json_files(PATH)
+
+#calculate fluxes
 n2o_flux <- calculate_n2o_flux(n2o_obs,deadband=30,deadband_c=0,stop_time_ag=120,offset_k="json",opt_db="no")
+
+#show results
+head(n2o_flux$data_n2o)
 ```
 
