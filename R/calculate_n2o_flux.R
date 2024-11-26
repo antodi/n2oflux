@@ -53,10 +53,10 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
         max_db <- strsplit(opt_db,"-")[[1]][2]
         res_tab <-c()
         coef_reg <-c()
-        for(i in min_db:max_db){
+        for(j in min_db:max_db){
 
-          sub_sam_1 <- sub_sam[c(1:i),]
-          sub_sam_2 <- sub_sam[c(i+1:nrow(sub_sam)),]
+          sub_sam_1 <- sub_sam[c(1:j),]
+          sub_sam_2 <- sub_sam[c(j+1:nrow(sub_sam)),]
 
           lm_beg <- lm(N2O_DRY~ETIME,data=sub_sam_1)
           lm_end <- lm(N2O_DRY~ETIME,data=sub_sam_2)
@@ -64,7 +64,7 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
           beg <- round(summary(lm_beg)$r.squared,3)
           end <- round(summary(lm_end)$r.squared,3)
 
-          res <- data.frame(beg,end,"deadband"=i)
+          res <- data.frame(beg,end,"deadband"=j)
           res_tab <- rbind(res_tab,res)
 
         }
