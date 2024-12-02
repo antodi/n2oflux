@@ -1,5 +1,5 @@
 
-# n2oflux
+# n2oflux: Reading and calculating N2O fluxes from Smart Chamber data
 
 <!-- badges: start -->
 <!-- badges: end -->

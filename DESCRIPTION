@@ -1,5 +1,5 @@
 Package: n2oflux
-Title: Reading and processing N2O fluxes from Smart Chamber (Licor) json files
+Title: Reading and calculating N2O fluxes from Smart Chamber data
 Version: 0.0.0.9000
 Authors@R: 
     person("Anthony", "Digrado", , "adigrado@illinois.edu", role = c("aut", "cre"),
