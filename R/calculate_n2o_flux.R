@@ -9,7 +9,7 @@
 #' @param stop_time_ag The duration of observation (sec).
 #' @param offset_k The value of the offset (cm) for the collar. If set to "json", the offset will be retrieved from the json file.
 #' @param opt_db The range at which the deadband should be optimized. For intance, if opt_db is set to '20-50', the optimum deadband will tested for all values between 20 and 50sec. The deadband won't be optimzed if set to 'no' (default).
-#' @param clean Parameter used to remove outliers. Observations outside of the range defined as Upper/Lower quantile +- IQR x (clean) willl be discarded. Outliers are not removed by default.
+#' @param clean Parameter used to remove outliers. Observations outside of the range defined as Upper/Lower quantile +- IQR x (clean) will be discarded. Outliers are not removed by default.
 #'
 #' @return A list containing; (1) data_n2o, the calculated fluxes. The column 'deadband' will show the optimized deadband if requested. The dNdt, flux, R squared, and RMSE values for the linear and nonlinear regressions are reported in the column containing _LIN (for linear) or _nLIN (for nonlinear regression) in their header. The column F_N2O reports the flux for the best model. (2) linear_model_n2o, the results for the linear regression. (3) nonlinear_model_n2o, the results for the nonlinear regression. (4) Outliers showing observations where outliers were discarded when asked.
 #' @export
