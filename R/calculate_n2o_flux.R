@@ -37,6 +37,33 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
     LABEL <- strsplit(as.character(groups[i]),"\\.")[[1]][2]
     sub_sam <- data[which(data$date == date & data$LABEL == LABEL ),]
 
+    #if bug in data collection, then return 99999 and proceed to next measurements
+    if(length(unique(sub_sam$ETIME)) < 5 ){
+      if(deadband_c>0){
+        #compile table
+        plot_data <- data.frame(date, "time"=99999, LABEL,  "stop_time"=99999, "deadband"=99999, "offset"=99999, "DIAGNOSIS"=99999,"Remark"=99999,
+                                "TA_m"=99999, "TS1_m"=99999, "EC2_m"=99999, "SWC2_m"=99999, "TS2_m"=99999,
+                                "FN2O_DRY_LIN_dNdt"=99999, "FN2O_DRY_LIN"=99999, "FN2O_DRY_LIN_R2"=99999, "FN2O_DRY_LIN_RMSE"=99999,
+                                "FN2O_DRY_nLIN_dNdt0"=99999, "FN2O_DRY_nLIN"=99999,"FN2O_DRY_nLIN_R2"=99999, "FN2O_DRY_nLIN_RMSE"=99999,
+                                "Cx"=99999,"alpha_v"=99999,"ETIME0"=99999,
+                                "FCO2_DRY_LIN_dNdt"=99999, "FCO2_DRY_LIN"=99999, "FCO2_DRY_LIN_R2"=99999, "FCO2_DRY_LIN_RMSE"=99999,
+                                "FCO2_DRY_nLIN_dNdt0"=99999, "FCO2_DRY_nLIN"=99999, "FCO2_DRY_nLIN_R2"=99999, "FCO2_DRY_nLIN_RMSE"=99999,
+                                "Cx_co2"=99999,"alpha_co2"=99999,"ETIME0_co2"=99999)
+
+      }else{
+
+        #compile table
+        plot_data <- data.frame(date, "time"=99999, LABEL,  "stop_time"=99999, "deadband"=99999, "offset"=99999, "DIAGNOSIS"=99999,"Remark"=99999,
+                                "TA_m"=99999, "TS1_m"=99999, "EC2_m"=99999, "SWC2_m"=99999, "TS2_m"=99999,
+                                "FN2O_DRY_LIN_dNdt"=99999, "FN2O_DRY_LIN"=99999, "FN2O_DRY_LIN_R2"=99999, "FN2O_DRY_LIN_RMSE"=99999,
+                                "FN2O_DRY_nLIN_dNdt0"=99999, "FN2O_DRY_nLIN"=99999,"FN2O_DRY_nLIN_R2"=99999, "FN2O_DRY_nLIN_RMSE"=99999,
+                                "Cx"=99999,"alpha_v"=99999,"ETIME0"=99999)
+      }
+
+      data_n2o <- rbind(data_n2o, plot_data)
+
+      next }
+
     #adjust ETIME
     if(0 %in% sub_sam$ETIME){sub_sam$ETIME <- sub_sam$ETIME +1 } ###NEW
 
@@ -60,7 +87,7 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
 
 
     #if number of observation below stop_time, then set stop_time to the number of obs
-    if(max(sub_sam$ETIME)<stop_time_ag){stop_time<-max(sub_sam$ETIME)}else{stop_time<-stop_time_ag}
+    if(max(sub_sam$ETIME,na.rm = TRUE)<stop_time_ag){stop_time<-max(sub_sam$ETIME,na.rm = TRUE)}else{stop_time<-stop_time_ag}
 
     #calculate total volume chamber
     #li870 volume = 33.5 cm3
