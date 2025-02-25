@@ -1,6 +1,6 @@
 #' Calculate N2O fluxes from processed json files
 #'
-#' This function calculate N2O fluxes using the table created by process_json_files function using a linear and nonlinear regression following the method described by Licor in the 8200 smart chamber manual. When the nonlinear function cannot be fit, the flux value for the linear regression is attributed by default.
+#' This function calculate N2O fluxes (nmol m-2 s-1) using the table created by process_json_files function using a linear and nonlinear regression following the method described by Licor in the 8200 smart chamber manual. When the nonlinear function cannot be fit, the flux value for the linear regression is attributed by default.
 #' It also allows to optimize the deadband within a given range. Before steady mixing is attained, N2O concentration can decreases. The optimum deadband is the time (opt_db) at which N2O concentration ceases to decrease and starts increasing. The optimum deadband is found by fitting two linear regression at start-opt_db and opt_db-end with opt_db taking all values between the given range. The opt_db value maximizing the R2 for both regressions is the optimum deadband. In case both regressions are positive, opt_db defaults to the given deadband.
 #'
 #' @param data The output from the process_json_files function.
@@ -37,6 +37,9 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
     LABEL <- strsplit(as.character(groups[i]),"\\.")[[1]][2]
     sub_sam <- data[which(data$date == date & data$LABEL == LABEL ),]
 
+    #adjust ETIME
+    if(0 %in% sub_sam$ETIME){sub_sam$ETIME <- sub_sam$ETIME +1 } ###NEW
+
     #cleaning by removing outliers
     if(clean != "no"){
       tresh<- as.numeric(clean)
@@ -57,7 +60,7 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
 
 
     #if number of observation below stop_time, then set stop_time to the number of obs
-    if(nrow(sub_sam)<stop_time_ag){stop_time<-nrow(sub_sam)}else{stop_time<-stop_time_ag}
+    if(max(sub_sam$ETIME)<stop_time_ag){stop_time<-max(sub_sam$ETIME)}else{stop_time<-stop_time_ag}
 
     #calculate total volume chamber
     #li870 volume = 33.5 cm3
@@ -142,8 +145,8 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
 
 
       #trim for n2o
-      sub_sam <- sub_sam[which(sub_sam$ETIME %in% c(c(1:stop_time)-1) ),] # select observation length
-      sub_sam <- sub_sam[-which(sub_sam$ETIME %in% c(c(1:deadband)-1)  ) ,] # remove deadband
+      sub_sam <- sub_sam[which(sub_sam$ETIME %in% c(c(1:stop_time)) ),] # select observation length
+      sub_sam <- sub_sam[-which(sub_sam$ETIME %in% c(c(1:deadband))  ) ,] # remove deadband
 
       #extract chamber condition
       TA_m <- mean(sub_sam$TA[which(sub_sam$TA<100)])
@@ -232,11 +235,14 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
 
     if( deadband_c > 0 ){
 
+      #adjust ETIME
+      if(0 %in% sub_sam$ETIME_co2){sub_sam$ETIME_co2 <- sub_sam$ETIME_co2 +1 } ###NEW
+
       #trim for co2
       sub_sam <- data[which(data$date == date & data$LABEL == LABEL ),]
 
-      sub_sam <- sub_sam[which(sub_sam$ETIME_co2 %in% c(c(1:stop_time)-1) ),] # select observation length
-      sub_sam <- sub_sam[-which(sub_sam$ETIME_co2 %in% c(c(1:deadband_c)-1)  ) ,] # remove deadband
+      sub_sam <- sub_sam[which(sub_sam$ETIME_co2 %in% c(c(1:stop_time)) ),] # select observation length
+      sub_sam <- sub_sam[-which(sub_sam$ETIME_co2 %in% c(c(1:deadband_c))  ) ,] # remove deadband
 
       W0_co2 <- summary(lm(data=sub_sam[1:10,], H2O_co2~ ETIME_co2))$coef[1,1]
       C0_co2 <- summary(lm(data=sub_sam[1:10,], CO2_DRY~ ETIME_co2))$coef[1,1]
