@@ -308,17 +308,17 @@ process_json_files = function(filepath) {
 
         #extract soil_t data
         if( soilt_line == "reading" & str_detect(line, "\\]")==TRUE ){
-          soilt_dat <- c(soilt_dat,paste0(soilt_f,str_extract(line, "[0-9,.-]+") ) )
+          soilt_dat <- c(soilt_dat,paste0(soilt_f,str_extract(line, "[0-9,.e+-]+") ) )
           soilt_line <- "false"
         }
 
         if( soilt_line == "reading"){
-          soilt_f <- paste0(soilt_f,str_extract(line, "[0-9,.-]+") )
+          soilt_f <- paste0(soilt_f,str_extract(line, "[0-9,.e+-]+") )
         }
 
         if(str_detect(line, "soil_t\":")==TRUE & data=="reading" ){
           soilt_line <- "reading"
-          soilt_f <- str_extract(line, "[0-9,.-]+")
+          soilt_f <- str_extract(line, "[0-9,.e+-]+")
         }
 
 
