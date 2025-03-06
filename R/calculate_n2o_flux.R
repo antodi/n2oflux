@@ -137,7 +137,7 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
     IrgaVolume <- unique(sub_sam$IrgaVolume) # = analyzer volume (cm3) + tubing (cm) * tubing area (0.158 cm2)
     Vcham<- Scham*offset + IrgaVolume + ChamVolume #cm3
 
-    if(deadband_c>0){Vcham <- Vcham+unique(sub_sam$IrgaVolume_li870) }
+    if("CO2_DRY" %in% colnames(sub_sam)){Vcham <- Vcham+unique(sub_sam$IrgaVolume_li870) }
 
     #set constant
     R <- 8.314 #gas constant (Pa m3 K-1 mol-1)
@@ -185,6 +185,10 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
       #extract diagnosis
       DIAGNOSIS <- mean(sub_sam$DIAGNOSIS)
 
+      #extract CV
+      N2O_CV <- mean(rollapply(sub_sam$N2O_DRY, width = 30, FUN = function(x)
+      {sd(x, na.rm = TRUE) / mean(x, na.rm = TRUE)}, align = "center", fill = NA)*100, na.rm = TRUE)
+
       #calculate linear N2O flux
       l_model <- lm(data=sub_sam, N2O_DRY~ ETIME)
       linear_model_n2o[[i]]<-l_model
@@ -200,7 +204,7 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
 
       # #calculate non-linear N2O flux
       res_fm2 <- nls2(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)), #get better starting values for nls
-                      start = list(Cx=c(350,500), alpha_v=c(0.0001,0.1),ETIME0=c(5,50)), alg = "brute",data=sub_sam)
+                      start = list(Cx=c(350,500), alpha_v=c(-0.1,0.1),ETIME0=c(5,50)), alg = "brute",data=sub_sam)
 
       tryCatch(  #if parameters cannot be estimated, then use dC/dt from linear regression
         { nl_model = nlsLM(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)),
@@ -274,6 +278,11 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
       W0_co2 <- summary(lm(data=sub_sam[1:10,], H2O_co2~ ETIME_co2))$coef[1,1]
       C0_co2 <- summary(lm(data=sub_sam[1:10,], CO2_DRY~ ETIME_co2))$coef[1,1]
 
+      #extract CV
+      CO2_CV <- mean(rollapply(sub_sam$CO2_DRY, width = 30, FUN = function(x)
+      {sd(x, na.rm = TRUE) / mean(x, na.rm = TRUE)}, align = "center", fill = NA)*100, na.rm = TRUE)
+
+
       #calculate linear CO2 flux
       l_model <- lm(data=sub_sam, CO2_DRY~ ETIME_co2)
       FCO2_DRY_LIN_R2 <- summary(l_model)$r.squared
@@ -286,7 +295,7 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
 
       # #calculate non-linear CO2 flux
       res_fm3 <- nls2(CO2_DRY ~ Cx_co2 + (C0_co2-Cx_co2)*exp( -alpha_co2*(ETIME_co2-ETIME0_co2)), #get better starting values for nls
-                      start = list(Cx_co2=c(3000,5000), alpha_co2=c(0.0001,0.1),ETIME0_co2=c(5,50)), alg = "brute",data=sub_sam)
+                      start = list(Cx_co2=c(3000,5000), alpha_co2=c(-0.1,0.1),ETIME0_co2=c(5,50)), alg = "brute",data=sub_sam)
 
       tryCatch(  #if parameters cannot be estimated, then use dC/dt from linear regression
         { nl_model = nlsLM(CO2_DRY ~ Cx_co2 + (C0_co2-Cx_co2)*exp( -alpha_co2*(ETIME_co2-ETIME0_co2)),
@@ -334,10 +343,10 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
                               TA_m, TS1_m, EC2_m, SWC2_m, TS2_m,
                               FN2O_DRY_LIN_dNdt, FN2O_DRY_LIN, FN2O_DRY_LIN_R2, FN2O_DRY_LIN_RMSE,
                               FN2O_DRY_nLIN_dNdt0, FN2O_DRY_nLIN,FN2O_DRY_nLIN_R2, FN2O_DRY_nLIN_RMSE,
-                              Cx,alpha_v,ETIME0,
+                              Cx,alpha_v,ETIME0,N2O_CV,
                               FCO2_DRY_LIN_dNdt, FCO2_DRY_LIN, FCO2_DRY_LIN_R2, FCO2_DRY_LIN_RMSE,
                               FCO2_DRY_nLIN_dNdt0, FCO2_DRY_nLIN, FCO2_DRY_nLIN_R2, FCO2_DRY_nLIN_RMSE,
-                              Cx_co2,alpha_co2,ETIME0_co2)
+                              Cx_co2,alpha_co2,ETIME0_co2,CO2_CV)
 
     }else{
 
@@ -346,7 +355,7 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
                               TA_m, TS1_m, EC2_m, SWC2_m, TS2_m,
                               FN2O_DRY_LIN_dNdt, FN2O_DRY_LIN, FN2O_DRY_LIN_R2, FN2O_DRY_LIN_RMSE,
                               FN2O_DRY_nLIN_dNdt0, FN2O_DRY_nLIN,FN2O_DRY_nLIN_R2, FN2O_DRY_nLIN_RMSE,
-                              Cx,alpha_v,ETIME0 )
+                              Cx,alpha_v,ETIME0,N2O_CV )
     }
 
 
