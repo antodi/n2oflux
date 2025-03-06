@@ -16,6 +16,7 @@ plot_fit <- function(id,data,deadband=30,stop_time_ag=120,offset_k="json",opt_db
 
   all_fig <- list()
   all_plot <-list()
+  db_default <- deadband
 
   for( mesu in 1:length(id)){
 
@@ -67,7 +68,6 @@ plot_fit <- function(id,data,deadband=30,stop_time_ag=120,offset_k="json",opt_db
     if(max(sub_sam$ETIME,na.rm = TRUE)<stop_time_ag){stop_time<-max(sub_sam$ETIME,na.rm = TRUE)}else{stop_time<-stop_time_ag}
 
     #optimize deadband
-    db_default <- deadband
 
     if(length(sub_sam$N2O_DRY>90) & table(is.na(sub_sam$N2O_DRY))[["FALSE"]] > 89){
       if(str_detect(opt_db,"[0-9]")==TRUE){
@@ -98,7 +98,7 @@ plot_fit <- function(id,data,deadband=30,stop_time_ag=120,offset_k="json",opt_db
 
       #check if first regression is positive or negative
       sub_sam_1 <- sub_sam[c(1:deadband),]
-      lm_beg <- lm(N2O_DRY~ETIME,data=sub_sam)
+      lm_beg <- lm(N2O_DRY~ETIME,data=sub_sam_1)
 
       if( coef(lm_beg)[[2]] > 0){ deadband <- db_default }
     }else{deadband<-deadband}
