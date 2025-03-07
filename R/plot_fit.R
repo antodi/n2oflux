@@ -186,20 +186,23 @@ plot_fit <- function(id,data,deadband=30,stop_time_ag=120,offset_k="json",opt_db
 
     fig <- fig +
 
-      annotate('rect', xmin=0,xmax=deadband, ymin=ymin, ymax=ymax, alpha=.2, fill='black')+ #deadband
+      annotate('rect', xmin=0,xmax=deadband, ymin=ymin, ymax=ymin+(ymax-ymin)*1.2, alpha=.2, fill='black')+ #deadband
+      annotate("text", label = paste0("deadband=",deadband),
+               x = 2, y = ymin, size = 4, colour = "black",hjust=0  ) + #deadband value
+
       annotate("text", label = measurement_id,
-               x = 2, y = ymax, size = 6, colour = "black",hjust=0  ) + #ID
+               x = 2, y = ymin+(ymax-ymin)*1.2, size = 6, colour = "black",hjust=0  ) + #ID
 
       annotate("text", label = paste0("lin: flux=",round(FN2O_DRY_LIN,3),", R2=",round(FN2O_DRY_LIN_R2,3),
                                       " , RMSE=",round(FN2O_DRY_LIN_RMSE,3)),
-               x = 2, y = ymin+(ymax-ymin)*.925, size = 4.5, colour = "blue",hjust=0  ) + #LIN
+               x = 2, y = ymin+(ymax-ymin)*1.1, size = 4.5, colour = "blue",hjust=0  ) + #LIN
 
       annotate("text", label = paste0("nlin: flux=",round(FN2O_DRY_nLIN,3), ", R2=",round(FN2O_DRY_nLIN_R2,3),
                                       " , RMSE=",round(FN2O_DRY_nLIN_RMSE,3)),
-               x = 2, y = ymin+(ymax-ymin)*.85, size = 4.5, colour = "red" ,hjust=0 ) +#nLIN
+               x = 2, y = ymin+(ymax-ymin)*1.0, size = 4.5, colour = "red" ,hjust=0 ) +#nLIN
 
       annotate("text", label = nlin_val,
-               x = 2, y = ymin+(ymax-ymin)*.775, size = 4.5, colour = "red",hjust=0  ) +#nLIN parameters
+               x = 2, y = ymin+(ymax-ymin)*.9, size = 4.5, colour = "red",hjust=0  ) +#nLIN parameters
 
       geom_vline(xintercept = deadband)+
       geom_smooth(data= sub_sam,method = "lm", formula = y~x)+
