@@ -30,7 +30,7 @@ calculate_n2o_flux(
 \item{clean}{Value (clean) used in the following formula to detect outliers and discard them. Outliers are defined as observations (obs_i) for which: obs_i > upper_quantile_0.75 + Inter_Quantile x (clean) OR obs_i < lower_quantile_0.25 - Inter_Quantile x (clean). Those observations are discarded. Outliers are not removed by default.}
 }
 \value{
-A list containing; (1) data_n2o, the calculated fluxes. The column 'deadband' will show the optimized deadband if requested. The dNdt, flux, R squared, and RMSE values for the linear and nonlinear regressions are reported in the column containing _LIN (for linear) or _nLIN (for nonlinear regression) in their header. The column F_N2O reports the flux for the best model. (2) linear_model_n2o, the results for the linear regression. (3) nonlinear_model_n2o, the results for the nonlinear regression. (4) When outliers were asked to be removed, a list of the measurements where outliers were detected is returned. All observations for those measurements are saved and the discarded outliers are flagged.
+A list containing; (1) data_n2o, the calculated fluxes. The column 'deadband' will show the optimized deadband if requested. The dNdt, flux, R squared, and RMSE values for the linear and nonlinear regressions are reported in the column containing _LIN (for linear) or _nLIN (for nonlinear regression) in their header. The pvalue for the linear model and for the alpha term of the non-linear model are reported. The column F_N2O reports the flux for the best model based on the RMSE. If the alpha term of the non-linear model is not significant, the flux estimated based on the linear model is given. (2) linear_model_n2o, the results for the linear regression. (3) nonlinear_model_n2o, the results for the nonlinear regression. (4) When outliers were asked to be removed, a list of the measurements where outliers were detected is returned. All observations for those measurements are saved and the discarded outliers are flagged.
 }
 \description{
 This function calculate N2O fluxes (nmol m-2 s-1) using the table created by process_json_files function using a linear and nonlinear regression following the method described by Licor in the 8200 smart chamber manual. When the nonlinear function cannot be fit, the flux value for the linear regression is attributed by default.
@@ -38,6 +38,6 @@ It also allows to optimize the deadband within a given range. Before steady mixi
 }
 \examples{
 head(example_n2o_data)
-n2o_flux<-calculate_n2o_flux(example_n2o_data)
+n2o_flux<-calculate_n2o_flux(example_n2o_data,opt_db="20-50",clean=2)
 n2o_flux
 }

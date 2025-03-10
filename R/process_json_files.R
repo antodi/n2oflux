@@ -9,7 +9,7 @@
 #' @export
 #'
 #' @examples
-#' process_json_files("filepath")
+#' n2o_obs<-process_json_files("filepath")
 process_json_files = function(filepath) {
 
   data_n2o_obs<-c()

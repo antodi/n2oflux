@@ -11,12 +11,12 @@
 #' @param opt_db The range at which the deadband should be optimized. For intance, if opt_db is set to '20-50', the optimum deadband will tested for all values between 20 and 50sec. The deadband won't be optimzed if set to 'no' (default).
 #' @param clean Value (clean) used in the following formula to detect outliers and discard them. Outliers are defined as observations (obs_i) for which: obs_i > upper_quantile_0.75 + Inter_Quantile x (clean) OR obs_i < lower_quantile_0.25 - Inter_Quantile x (clean). Those observations are discarded. Outliers are not removed by default.
 #'
-#' @return A list containing; (1) data_n2o, the calculated fluxes. The column 'deadband' will show the optimized deadband if requested. The dNdt, flux, R squared, and RMSE values for the linear and nonlinear regressions are reported in the column containing _LIN (for linear) or _nLIN (for nonlinear regression) in their header. The column F_N2O reports the flux for the best model. (2) linear_model_n2o, the results for the linear regression. (3) nonlinear_model_n2o, the results for the nonlinear regression. (4) When outliers were asked to be removed, a list of the measurements where outliers were detected is returned. All observations for those measurements are saved and the discarded outliers are flagged.
+#' @return A list containing; (1) data_n2o, the calculated fluxes. The column 'deadband' will show the optimized deadband if requested. The dNdt, flux, R squared, and RMSE values for the linear and nonlinear regressions are reported in the column containing _LIN (for linear) or _nLIN (for nonlinear regression) in their header. The pvalue for the linear model and for the alpha term of the non-linear model are reported. The column F_N2O reports the flux for the best model based on the RMSE. If the alpha term of the non-linear model is not significant, the flux estimated based on the linear model is given. (2) linear_model_n2o, the results for the linear regression. (3) nonlinear_model_n2o, the results for the nonlinear regression. (4) When outliers were asked to be removed, a list of the measurements where outliers were detected is returned. All observations for those measurements are saved and the discarded outliers are flagged.
 #' @export
 #'
 #' @examples
 #' head(example_n2o_data)
-#' n2o_flux<-calculate_n2o_flux(example_n2o_data)
+#' n2o_flux<-calculate_n2o_flux(example_n2o_data,opt_db="20-50",clean=2)
 #' n2o_flux
 calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,offset_k="json",opt_db="no",clean="no"){
 
@@ -201,6 +201,8 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
 
       FN2O_DRY_LIN <- (10*Vcham*P*(1-W0/1000))/(R*Scham*(T0+273.15))* FN2O_DRY_LIN_dNdt
 
+      lin_f <- summary(l_model)$fstatistic
+      FN2O_LIN_pval <- pf(lin_f[1],lin_f[2],lin_f[3],lower.tail=F)
 
       # #calculate non-linear N2O flux
       res_fm2 <- nls2(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)), #get better starting values for nls
@@ -224,13 +226,18 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
 
         dN_dtp <- alpha_v*(Cx-C0)*exp(-alpha_v*(sub_sam$ETIME[nrow(sub_sam)]-ETIME0 ) )
         FN2O_DRY_nLIN_dNdt0 <- alpha_v*(Cx-C0)  #slope at t=t0
+
+        FN2O_alpha_pval <- summary(nl_model)$parameters['alpha_v','Pr(>|t|)']
+
+
         },
         error=function(e){
           FN2O_DRY_nLIN_dNdt0 <<- FN2O_DRY_LIN_dNdt
           FN2O_DRY_nLIN_R2 <<- 0
-          FN2O_DRY_nLIN_RMSE <<-0
+          FN2O_DRY_nLIN_RMSE <<-99999
           Cx <<- 99999
           alpha_v <<- 99999
+          FN2O_alpha_pval <<- 99999
           ETIME0 <<-99999
 
           nonlinear_model_n2o[[i]]<-"NULL"
@@ -256,8 +263,9 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
 
       var_n <- c("TA_m", "TS1_m", "EC2_m", "SWC2_m", "TS2_m",
                  "FN2O_DRY_LIN_dNdt", "FN2O_DRY_LIN", "FN2O_DRY_LIN_R2", "FN2O_DRY_LIN_RMSE",
+                 "FN2O_LIN_pval",
                  "FN2O_DRY_nLIN_dNdt0", "FN2O_DRY_nLIN","FN2O_DRY_nLIN_R2", "FN2O_DRY_nLIN_RMSE",
-                 "Cx","alpha_v","ETIME0")
+                 "Cx","alpha_v","FN2O_alpha_pval","ETIME0")
 
       for (i in seq(var_n)) assign(var_n[i],9999)
 
@@ -292,6 +300,8 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
 
       FCO2_DRY_LIN <- (10*Vcham*P*(1-W0_co2/1000))/(R*Scham*(T0+273.15))* FCO2_DRY_LIN_dNdt
 
+      lin_f <- summary(l_model)$fstatistic
+      FCO2_LIN_pval <- pf(lin_f[1],lin_f[2],lin_f[3],lower.tail=F)
 
       # #calculate non-linear CO2 flux
       res_fm3 <- nls2(CO2_DRY ~ Cx_co2 + (C0_co2-Cx_co2)*exp( -alpha_co2*(ETIME_co2-ETIME0_co2)), #get better starting values for nls
@@ -313,12 +323,16 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
 
         dN_dtp <- alpha_co2*(Cx_co2-C0_co2)*exp(-alpha_co2*(sub_sam$ETIME_co2[nrow(sub_sam)]-ETIME0_co2 ) )
         FCO2_DRY_nLIN_dNdt0 <- alpha_co2*(Cx_co2-C0_co2)  #slope at t=t0
+
+        FCO2_alpha_pval <- summary(nl_model)$parameters['alpha_co2','Pr(>|t|)']
+
         },
         error=function(e){
           FCO2_DRY_nLIN_dNdt0 <<- FCO2_DRY_LIN_dNdt
           FCO2_DRY_nLIN_R2 <<- 0
-          FCO2_DRY_nLIN_RMSE <<-0
+          FCO2_DRY_nLIN_RMSE <<-99999
           Cx_co2 <<- 99999
+          FCO2_alpha_pval<<-99999
           alpha_co2 <<- 99999
           ETIME0_co2 <<-99999
         }
@@ -342,11 +356,13 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
       plot_data <- data.frame(date, time, LABEL,  stop_time, deadband, offset, DIAGNOSIS,Remark,
                               TA_m, TS1_m, EC2_m, SWC2_m, TS2_m,
                               FN2O_DRY_LIN_dNdt, FN2O_DRY_LIN, FN2O_DRY_LIN_R2, FN2O_DRY_LIN_RMSE,
+                              FN2O_LIN_pval,
                               FN2O_DRY_nLIN_dNdt0, FN2O_DRY_nLIN,FN2O_DRY_nLIN_R2, FN2O_DRY_nLIN_RMSE,
-                              Cx,alpha_v,ETIME0,N2O_CV,
+                              Cx,alpha_v,FN2O_alpha_pval,ETIME0,N2O_CV,
                               FCO2_DRY_LIN_dNdt, FCO2_DRY_LIN, FCO2_DRY_LIN_R2, FCO2_DRY_LIN_RMSE,
+                              FCO2_LIN_pval,
                               FCO2_DRY_nLIN_dNdt0, FCO2_DRY_nLIN, FCO2_DRY_nLIN_R2, FCO2_DRY_nLIN_RMSE,
-                              Cx_co2,alpha_co2,ETIME0_co2,CO2_CV)
+                              Cx_co2,alpha_co2,FCO2_alpha_pval,ETIME0_co2,CO2_CV)
 
     }else{
 
@@ -354,8 +370,9 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
       plot_data <- data.frame(date, time, LABEL, stop_time, deadband, offset, DIAGNOSIS,Remark,
                               TA_m, TS1_m, EC2_m, SWC2_m, TS2_m,
                               FN2O_DRY_LIN_dNdt, FN2O_DRY_LIN, FN2O_DRY_LIN_R2, FN2O_DRY_LIN_RMSE,
+                              FN2O_LIN_pval,
                               FN2O_DRY_nLIN_dNdt0, FN2O_DRY_nLIN,FN2O_DRY_nLIN_R2, FN2O_DRY_nLIN_RMSE,
-                              Cx,alpha_v,ETIME0,N2O_CV )
+                              Cx,alpha_v,FN2O_alpha_pval,ETIME0,N2O_CV )
     }
 
 
@@ -370,7 +387,8 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
   data_n2o$best_model<-c()
   for( i in 1:nrow(data_n2o)){
 
-    if(data_n2o$FN2O_DRY_LIN_RMSE[i] <= data_n2o$FN2O_DRY_nLIN_RMSE[i]){
+    if(data_n2o$FN2O_DRY_LIN_RMSE[i] <= data_n2o$FN2O_DRY_nLIN_RMSE[i] |
+       data_n2o$FN2O_alpha_pval[i] > 0.05){
       data_n2o$F_N2O[i] <- data_n2o$FN2O_DRY_LIN[i]
       data_n2o$best_model[i] <- "LIN"
     }else{
@@ -378,7 +396,7 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
       data_n2o$best_model[i] <- "nLIN"
     }
   }
-  data_n2o$best_model[which(data_n2o$FN2O_DRY_nLIN_RMSE==0)]<-"LIN"
+  data_n2o$best_model[which(data_n2o$FN2O_DRY_nLIN_RMSE==99999)]<-"LIN"
 
 
   if( deadband_c > 0 ){
@@ -388,7 +406,8 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
     data_n2o$best_model_co2<-c()
     for( i in 1:nrow(data_n2o)){
 
-      if(data_n2o$FCO2_DRY_LIN_RMSE[i] <= data_n2o$FCO2_DRY_nLIN_RMSE[i]){
+      if(data_n2o$FCO2_DRY_LIN_RMSE[i] <= data_n2o$FCO2_DRY_nLIN_RMSE[i] |
+         data_n2o$FCO2_alpha_pval[i]  > 0.05){
         data_n2o$F_CO2[i] <- data_n2o$FCO2_DRY_LIN[i]
         data_n2o$best_model_co2[i] <- "LIN"
       }else{
@@ -396,7 +415,7 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
         data_n2o$best_model_co2[i] <- "nLIN"
       }
     }
-    data_n2o$best_model[which(data_n2o$FCO2_DRY_nLIN_RMSE==0)]<-"LIN"
+    data_n2o$best_model[which(data_n2o$FCO2_DRY_nLIN_RMSE==99999)]<-"LIN"
 
   }
 

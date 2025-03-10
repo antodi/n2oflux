@@ -16,5 +16,5 @@ A table containing all the observations and informations from the json file.
 This function process the json file from the Licor 8200 Smart Chamber and return the result as a table that can be easily read and processed by R.
 }
 \examples{
-process_json_files("filepath")
+n2o_obs<-process_json_files("filepath")
 }
