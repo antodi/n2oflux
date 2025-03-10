@@ -137,6 +137,11 @@ plot_fit <- function(id,data,deadband=30,stop_time_ag=120,offset_k="json",opt_db
 
     FN2O_DRY_LIN <- (10*Vcham*P*(1-W0/1000))/(R*Scham*(T0+273.15))* FN2O_DRY_LIN_dNdt
 
+    lin_f <- summary(l_model)$fstatistic
+    FN2O_LIN_pval <- pf(lin_f[1],lin_f[2],lin_f[3],lower.tail=F)
+
+    if (FN2O_LIN_pval<0.001){FN2O_LIN_pval<-"<0.001"}else{
+      FN2O_LIN_pval <- paste0("=",round(as.numeric(FN2O_LIN_pval),4) ) }
 
     # #calculate non-linear N2O flux
     res_fm <- nls2(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)), #get better starting values for nls
@@ -159,19 +164,26 @@ plot_fit <- function(id,data,deadband=30,stop_time_ag=120,offset_k="json",opt_db
 
       dN_dtp <- alpha_v*(Cx-C0)*exp(-alpha_v*(sub_sam$ETIME[nrow(sub_sam)]-ETIME0 ) )
       FN2O_DRY_nLIN_dNdt0 <- alpha_v*(Cx-C0)  #slope at t=t0
+
+      FN2O_alpha_pval <- summary(nl_model)$parameters['alpha_v','Pr(>|t|)']
+
       },
       error=function(e){
         FN2O_DRY_nLIN_dNdt0 <<- FN2O_DRY_LIN_dNdt
         FN2O_DRY_nLIN_R2 <<- 0
-        FN2O_DRY_nLIN_RMSE <<-0
+        FN2O_DRY_nLIN_RMSE <<-99999
         Cx <<- 99999
         alpha_v <<- 99999
+        FN2O_alpha_pval <<- 99999
         ETIME0 <<-99999
 
       }
     )
 
     FN2O_DRY_nLIN <- (10*Vcham*P*(1-W0/1000))/(R*Scham*(T0+273.15))* FN2O_DRY_nLIN_dNdt0
+
+    if (FN2O_alpha_pval<0.001){FN2O_alpha_pval<-"<0.001"}else{
+      FN2O_alpha_pval <- paste0("=",round(as.numeric(FN2O_alpha_pval),4) ) }
 
     nlin_val <- paste0("alpha=",round(alpha_v,6),", etime0=",round(ETIME0,2),", Cx", "=",round(Cx,1))
 
@@ -195,11 +207,11 @@ plot_fit <- function(id,data,deadband=30,stop_time_ag=120,offset_k="json",opt_db
                x = 2, y = ymin+(ymax-ymin)*1.2, size = 6, colour = "black",hjust=0  ) + #ID
 
       annotate("text", label = paste0("lin: flux=",round(FN2O_DRY_LIN,3),", R2=",round(FN2O_DRY_LIN_R2,3),
-                                      " , RMSE=",round(FN2O_DRY_LIN_RMSE,3)),
+                                      " , RMSE=",round(FN2O_DRY_LIN_RMSE,3),", pval",FN2O_LIN_pval),
                x = 2, y = ymin+(ymax-ymin)*1.1, size = 4.5, colour = "blue",hjust=0  ) + #LIN
 
       annotate("text", label = paste0("nlin: flux=",round(FN2O_DRY_nLIN,3), ", R2=",round(FN2O_DRY_nLIN_R2,3),
-                                      " , RMSE=",round(FN2O_DRY_nLIN_RMSE,3)),
+                                      " , RMSE=",round(FN2O_DRY_nLIN_RMSE,3),", pval",FN2O_alpha_pval),
                x = 2, y = ymin+(ymax-ymin)*1.0, size = 4.5, colour = "red" ,hjust=0 ) +#nLIN
 
       annotate("text", label = nlin_val,
@@ -211,10 +223,10 @@ plot_fit <- function(id,data,deadband=30,stop_time_ag=120,offset_k="json",opt_db
       theme_bw()+
       theme(axis.text=element_text(size=12,color="black"),
             axis.title=element_text(size=14,color="black"),
-            panel.border = element_rect(size =  1.5),
+            panel.border = element_rect(linewidth =  1.5),
             plot.margin = margin(.5, .5, .5, .5, "cm") )
 
-    if(FN2O_DRY_nLIN_RMSE>0){
+    if(FN2O_DRY_nLIN_RMSE != 99999){
       fig <- fig +  geom_line(data=sub_sam,aes(ETIME,predict(nl_model) ),
                               inherit.aes = FALSE,color="red",linewidth=1)}
 
