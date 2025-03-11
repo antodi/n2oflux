@@ -206,7 +206,7 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
 
       # #calculate non-linear N2O flux
       res_fm2 <- nls2(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)), #get better starting values for nls
-                      start = list(Cx=c(350,500), alpha_v=c(-0.1,0.1),ETIME0=c(5,50)), alg = "brute",data=sub_sam)
+                      start = list(Cx=c(1,1000), alpha_v=c(-0.1,0.1),ETIME0=c(-100,500)), alg = "brute",data=sub_sam)
 
       tryCatch(  #if parameters cannot be estimated, then use dC/dt from linear regression
         { nl_model = nlsLM(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)),
@@ -305,7 +305,7 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
 
       # #calculate non-linear CO2 flux
       res_fm3 <- nls2(CO2_DRY ~ Cx_co2 + (C0_co2-Cx_co2)*exp( -alpha_co2*(ETIME_co2-ETIME0_co2)), #get better starting values for nls
-                      start = list(Cx_co2=c(3000,5000), alpha_co2=c(-0.1,0.1),ETIME0_co2=c(5,50)), alg = "brute",data=sub_sam)
+                      start = list(Cx_co2=c(1000,5000), alpha_co2=c(-0.1,0.1),ETIME0_co2=c(-10,50)), alg = "brute",data=sub_sam)
 
       tryCatch(  #if parameters cannot be estimated, then use dC/dt from linear regression
         { nl_model = nlsLM(CO2_DRY ~ Cx_co2 + (C0_co2-Cx_co2)*exp( -alpha_co2*(ETIME_co2-ETIME0_co2)),
