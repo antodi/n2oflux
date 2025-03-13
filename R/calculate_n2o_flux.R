@@ -231,7 +231,7 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
           FN2O_alpha_pval <- summary(nl_model)$parameters['alpha_v','Pr(>|t|)']
         },
         error=function(e){
-          tryCatch(  #if parameters cannot be estimated, then use dC/dt from linear regression
+          tryCatch(  #second round with new starting values
             {
               nl_model <<- nlsLM(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)),
                                  start=list(Cx=c(300), alpha_v=c(-1),ETIME0=c(100)),
