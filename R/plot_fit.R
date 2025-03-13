@@ -156,6 +156,8 @@ plot_fit <- function(id,data,deadband=30,stop_time_ag=120,offset_k="json",opt_db
                           control = nls.lm.control(maxiter=150),
                           data = sub_sam)
 
+        # nonlinear_model_n2o[[i]]<-nl_model
+        # names(nonlinear_model_n2o)[i]<-as.character(groups[i])
 
         FN2O_DRY_nLIN_R2 <- 1 - (deviance(nl_model)/sum((sub_sam$N2O_DRY-mean(sub_sam$N2O_DRY))^2))
         FN2O_DRY_nLIN_RMSE <- sqrt(mean((sub_sam$N2O_DRY - predict(nl_model,x=sub_sam$ETIME))^2))
@@ -170,13 +172,15 @@ plot_fit <- function(id,data,deadband=30,stop_time_ag=120,offset_k="json",opt_db
         FN2O_alpha_pval <- summary(nl_model)$parameters['alpha_v','Pr(>|t|)']
       },
       error=function(e){
-        tryCatch(  #if parameters cannot be estimated, then use dC/dt from linear regression
+        tryCatch(  #second round with new starting values
           {
             nl_model <<- nlsLM(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)),
                                start=list(Cx=c(300), alpha_v=c(-1),ETIME0=c(100)),
                                control = nls.lm.control(maxiter=150),
                                data = sub_sam)
 
+            # nonlinear_model_n2o[[i]]<<-nl_model
+            # names(nonlinear_model_n2o)[i]<<-as.character(groups[i])
 
             FN2O_DRY_nLIN_R2 <<- 1 - (deviance(nl_model)/sum((sub_sam$N2O_DRY-mean(sub_sam$N2O_DRY))^2))
             FN2O_DRY_nLIN_RMSE <<- sqrt(mean((sub_sam$N2O_DRY - predict(nl_model,x=sub_sam$ETIME))^2))
