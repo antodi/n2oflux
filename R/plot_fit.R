@@ -150,40 +150,58 @@ plot_fit <- function(id,data,deadband=30,stop_time_ag=120,offset_k="json",opt_db
 
 
     tryCatch(  #if parameters cannot be estimated, then use dC/dt from linear regression
-      { nl_model = nlsLM(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)),
-                         start=coef(res_fm2),
-                         control = nls.lm.control(maxiter=100),
-                         data = sub_sam)
-
-      nonlinear_model_n2o[[i]]<-nl_model
-      names(nonlinear_model_n2o)[i]<-as.character(groups[i])
-
-      FN2O_DRY_nLIN_R2 <- 1 - (deviance(nl_model)/sum((sub_sam$N2O_DRY-mean(sub_sam$N2O_DRY))^2))
-      FN2O_DRY_nLIN_RMSE <- sqrt(mean((sub_sam$N2O_DRY - predict(nl_model,x=sub_sam$ETIME))^2))
-
-      Cx <- coef(nl_model)[[1]]
-      alpha_v <- coef(nl_model)[[2]]
-      ETIME0 <- coef(nl_model)[[3]]
-
-      dN_dtp <- alpha_v*(Cx-C0)*exp(-alpha_v*(sub_sam$ETIME[nrow(sub_sam)]-ETIME0 ) )
-      FN2O_DRY_nLIN_dNdt0 <- alpha_v*(Cx-C0)  #slope at t=t0
-
-      FN2O_alpha_pval <- summary(nl_model)$parameters['alpha_v','Pr(>|t|)']
+      {
+        nl_model <- nlsLM(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)),
+                          start=coef(res_fm2),
+                          control = nls.lm.control(maxiter=150),
+                          data = sub_sam)
 
 
+        FN2O_DRY_nLIN_R2 <- 1 - (deviance(nl_model)/sum((sub_sam$N2O_DRY-mean(sub_sam$N2O_DRY))^2))
+        FN2O_DRY_nLIN_RMSE <- sqrt(mean((sub_sam$N2O_DRY - predict(nl_model,x=sub_sam$ETIME))^2))
+
+        Cx <- coef(nl_model)[[1]]
+        alpha_v <- coef(nl_model)[[2]]
+        ETIME0 <- coef(nl_model)[[3]]
+
+        dN_dtp <- alpha_v*(Cx-C0)*exp(-alpha_v*(sub_sam$ETIME[nrow(sub_sam)]-ETIME0 ) )
+        FN2O_DRY_nLIN_dNdt0 <- alpha_v*(Cx-C0)  #slope at t=t0
+
+        FN2O_alpha_pval <- summary(nl_model)$parameters['alpha_v','Pr(>|t|)']
       },
       error=function(e){
-        FN2O_DRY_nLIN_dNdt0 <<- FN2O_DRY_LIN_dNdt
-        FN2O_DRY_nLIN_R2 <<- 0
-        FN2O_DRY_nLIN_RMSE <<-99999
-        Cx <<- 99999
-        alpha_v <<- 99999
-        FN2O_alpha_pval <<- 99999
-        ETIME0 <<-99999
+        tryCatch(  #if parameters cannot be estimated, then use dC/dt from linear regression
+          {
+            nl_model <<- nlsLM(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)),
+                               start=list(Cx=c(300), alpha_v=c(-1),ETIME0=c(100)),
+                               control = nls.lm.control(maxiter=150),
+                               data = sub_sam)
 
-        nonlinear_model_n2o[[i]]<-"NULL"
-        names(nonlinear_model_n2o)[i]<-as.character(groups[i])
-      }
+
+            FN2O_DRY_nLIN_R2 <<- 1 - (deviance(nl_model)/sum((sub_sam$N2O_DRY-mean(sub_sam$N2O_DRY))^2))
+            FN2O_DRY_nLIN_RMSE <<- sqrt(mean((sub_sam$N2O_DRY - predict(nl_model,x=sub_sam$ETIME))^2))
+
+            Cx <<- coef(nl_model)[[1]]
+            alpha_v <<- coef(nl_model)[[2]]
+            ETIME0 <<- coef(nl_model)[[3]]
+
+            dN_dtp <<- alpha_v*(Cx-C0)*exp(-alpha_v*(sub_sam$ETIME[nrow(sub_sam)]-ETIME0 ) )
+            FN2O_DRY_nLIN_dNdt0 <<- alpha_v*(Cx-C0)  #slope at t=t0
+
+            FN2O_alpha_pval <<- summary(nl_model)$parameters['alpha_v','Pr(>|t|)']
+          },
+          error=function(e){
+            FN2O_DRY_nLIN_dNdt0 <<- FN2O_DRY_LIN_dNdt
+            FN2O_DRY_nLIN_R2 <<- 0
+            FN2O_DRY_nLIN_RMSE <<-99999
+            Cx <<- 99999
+            alpha_v <<- 99999
+            FN2O_alpha_pval <<- 99999
+            ETIME0 <<-99999
+          } )
+      } ,
+
+      error=function(e){ }
     )
 
     FN2O_DRY_nLIN <- (10*Vcham*P*(1-W0/1000))/(R*Scham*(T0+273.15))* FN2O_DRY_nLIN_dNdt0
