@@ -155,8 +155,6 @@ plot_fit <- function(id,data,deadband=30,stop_time_ag=120,offset_k="json",opt_db
                          control = nls.lm.control(maxiter=100),
                          data = sub_sam)
 
-      nonlinear_model_n2o[[i]]<-nl_model
-      names(nonlinear_model_n2o)[i]<-as.character(groups[i])
 
       FN2O_DRY_nLIN_R2 <- 1 - (deviance(nl_model)/sum((sub_sam$N2O_DRY-mean(sub_sam$N2O_DRY))^2))
       FN2O_DRY_nLIN_RMSE <- sqrt(mean((sub_sam$N2O_DRY - predict(nl_model,x=sub_sam$ETIME))^2))
@@ -181,8 +179,6 @@ plot_fit <- function(id,data,deadband=30,stop_time_ag=120,offset_k="json",opt_db
         FN2O_alpha_pval <<- 99999
         ETIME0 <<-99999
 
-        nonlinear_model_n2o[[i]]<-"NULL"
-        names(nonlinear_model_n2o)[i]<-as.character(groups[i])
       }
     )
 
