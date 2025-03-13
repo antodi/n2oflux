@@ -144,7 +144,7 @@ plot_fit <- function(id,data,deadband=30,stop_time_ag=120,offset_k="json",opt_db
       FN2O_LIN_pval <- paste0("=",round(as.numeric(FN2O_LIN_pval),4) ) }
 
     # #calculate non-linear N2O flux
-    res_fm <- nls2(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)), #get better starting values for nls
+    res_fm2 <- nls2(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)), #get better starting values for nls
                    start = list(Cx=c(1,1000), alpha_v=c(-0.1,0.1),ETIME0=c(5,50)),
                    alg = "brute",data=sub_sam)
 
