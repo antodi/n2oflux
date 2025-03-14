@@ -205,19 +205,21 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
       FN2O_LIN_pval <- pf(lin_f[1],lin_f[2],lin_f[3],lower.tail=F)
 
       # #calculate non-linear N2O flux
-      res_fm2 <- nls2(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)), #get better starting values for nls
-                      start = list(Cx=c(1,1000), alpha_v=c(-0.1,0.1),ETIME0=c(5,50)), alg = "brute",data=sub_sam)
+      est_nlin<-list()
+      est_nlin_mod<-list()
 
       tryCatch(  #if parameters cannot be estimated, then use dC/dt from linear regression
         {
+          all_par<-c()
+          res_fm2 <- nls2(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)), #get better starting values for nls
+                          start = list(Cx=c(1,1000), alpha_v=c(-0.1,0.1),ETIME0=c(5,50)),
+                          alg = "brute",data=sub_sam)
+
+
           nl_model <- nlsLM(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)),
                             start=coef(res_fm2),
                             control = nls.lm.control(maxiter=150),
                             data = sub_sam)
-
-          nonlinear_model_n2o[[i]]<-nl_model
-          names(nonlinear_model_n2o)[i]<-as.character(groups[i])
-
           FN2O_DRY_nLIN_R2 <- 1 - (deviance(nl_model)/sum((sub_sam$N2O_DRY-mean(sub_sam$N2O_DRY))^2))
           FN2O_DRY_nLIN_RMSE <- sqrt(mean((sub_sam$N2O_DRY - predict(nl_model,x=sub_sam$ETIME))^2))
 
@@ -229,43 +231,134 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
           FN2O_DRY_nLIN_dNdt0 <- alpha_v*(Cx-C0)  #slope at t=t0
 
           FN2O_alpha_pval <- summary(nl_model)$parameters['alpha_v','Pr(>|t|)']
+
+          all_par <- data.frame(FN2O_DRY_nLIN_R2,FN2O_DRY_nLIN_RMSE,Cx,alpha_v,ETIME0,
+                                FN2O_DRY_nLIN_dNdt0,FN2O_alpha_pval)
+
+          est_nlin_mod[[1]] <- nl_model
+          est_nlin[[1]] <-  all_par
+
+
         },
         error=function(e){
-          tryCatch(  #second round with new starting values
-            {
-              nl_model <<- nlsLM(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)),
-                                 start=list(Cx=c(300), alpha_v=c(-1),ETIME0=c(100)),
-                                 control = nls.lm.control(maxiter=150),
-                                 data = sub_sam)
+          FN2O_DRY_nLIN_dNdt0 <<- FN2O_DRY_LIN_dNdt
+          FN2O_DRY_nLIN_R2 <<- 0
+          FN2O_DRY_nLIN_RMSE <<-99999
+          Cx <<- 99999
+          alpha_v <<- 99999
+          FN2O_alpha_pval <<- 99999
+          ETIME0 <<-99999
 
-              nonlinear_model_n2o[[i]]<<-nl_model
-              names(nonlinear_model_n2o)[i]<<-as.character(groups[i])
+          all_par <<- data.frame(FN2O_DRY_nLIN_R2,FN2O_DRY_nLIN_RMSE,Cx,alpha_v,ETIME0,
+                                 FN2O_DRY_nLIN_dNdt0,FN2O_alpha_pval)
 
-              FN2O_DRY_nLIN_R2 <<- 1 - (deviance(nl_model)/sum((sub_sam$N2O_DRY-mean(sub_sam$N2O_DRY))^2))
-              FN2O_DRY_nLIN_RMSE <<- sqrt(mean((sub_sam$N2O_DRY - predict(nl_model,x=sub_sam$ETIME))^2))
+          est_nlin_mod[[1]] <<- NA
+          est_nlin[[1]] <<-  all_par
 
-              Cx <<- coef(nl_model)[[1]]
-              alpha_v <<- coef(nl_model)[[2]]
-              ETIME0 <<- coef(nl_model)[[3]]
-
-              dN_dtp <<- alpha_v*(Cx-C0)*exp(-alpha_v*(sub_sam$ETIME[nrow(sub_sam)]-ETIME0 ) )
-              FN2O_DRY_nLIN_dNdt0 <<- alpha_v*(Cx-C0)  #slope at t=t0
-
-              FN2O_alpha_pval <<- summary(nl_model)$parameters['alpha_v','Pr(>|t|)']
-            },
-            error=function(e){
-              FN2O_DRY_nLIN_dNdt0 <<- FN2O_DRY_LIN_dNdt
-              FN2O_DRY_nLIN_R2 <<- 0
-              FN2O_DRY_nLIN_RMSE <<-99999
-              Cx <<- 99999
-              alpha_v <<- 99999
-              FN2O_alpha_pval <<- 99999
-              ETIME0 <<-99999
-            } )
-        } ,
-
-        error=function(e){ }
+        }
       )
+
+      tryCatch(  #if parameters cannot be estimated, then use dC/dt from linear regression
+        {
+          all_par<-c()
+
+          nl_model <- nlsLM(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)),
+                            start=list(Cx=c(300), alpha_v=c(-.1),ETIME0=c(100)),
+                            control = nls.lm.control(maxiter=150),
+                            data = sub_sam)
+          FN2O_DRY_nLIN_R2 <- 1 - (deviance(nl_model)/sum((sub_sam$N2O_DRY-mean(sub_sam$N2O_DRY))^2))
+          FN2O_DRY_nLIN_RMSE <- sqrt(mean((sub_sam$N2O_DRY - predict(nl_model,x=sub_sam$ETIME))^2))
+
+          Cx <- coef(nl_model)[[1]]
+          alpha_v <- coef(nl_model)[[2]]
+          ETIME0 <- coef(nl_model)[[3]]
+
+          dN_dtp <- alpha_v*(Cx-C0)*exp(-alpha_v*(sub_sam$ETIME[nrow(sub_sam)]-ETIME0 ) )
+          FN2O_DRY_nLIN_dNdt0 <- alpha_v*(Cx-C0)  #slope at t=t0
+
+          FN2O_alpha_pval <- summary(nl_model)$parameters['alpha_v','Pr(>|t|)']
+
+          all_par <- data.frame(FN2O_DRY_nLIN_R2,FN2O_DRY_nLIN_RMSE,Cx,alpha_v,ETIME0,
+                                FN2O_DRY_nLIN_dNdt0,FN2O_alpha_pval)
+          est_nlin_mod[[2]] <- nl_model
+          est_nlin[[2]] <-  all_par
+
+        },
+        error=function(e){
+          FN2O_DRY_nLIN_dNdt0 <<- FN2O_DRY_LIN_dNdt
+          FN2O_DRY_nLIN_R2 <<- 0
+          FN2O_DRY_nLIN_RMSE <<-99999
+          Cx <<- 99999
+          alpha_v <<- 99999
+          FN2O_alpha_pval <<- 99999
+          ETIME0 <<-99999
+
+          all_par <<- data.frame(FN2O_DRY_nLIN_R2,FN2O_DRY_nLIN_RMSE,Cx,alpha_v,ETIME0,
+                                 FN2O_DRY_nLIN_dNdt0,FN2O_alpha_pval)
+
+          est_nlin_mod[[2]] <<- NA
+          est_nlin[[2]] <<-  all_par
+        }
+      )
+
+      tryCatch(  #if parameters cannot be estimated, then use dC/dt from linear regression
+        {
+          all_par<-c()
+
+          nl_model <- nlsLM(N2O_DRY ~ Cx + (C0-Cx)*exp( -alpha_v*(ETIME-ETIME0)),
+                            start=list(Cx=c(300), alpha_v=c(.1),ETIME0=c(100)),
+                            control = nls.lm.control(maxiter=150),
+                            data = sub_sam)
+          FN2O_DRY_nLIN_R2 <- 1 - (deviance(nl_model)/sum((sub_sam$N2O_DRY-mean(sub_sam$N2O_DRY))^2))
+          FN2O_DRY_nLIN_RMSE <- sqrt(mean((sub_sam$N2O_DRY - predict(nl_model,x=sub_sam$ETIME))^2))
+
+          Cx <- coef(nl_model)[[1]]
+          alpha_v <- coef(nl_model)[[2]]
+          ETIME0 <- coef(nl_model)[[3]]
+
+          dN_dtp <- alpha_v*(Cx-C0)*exp(-alpha_v*(sub_sam$ETIME[nrow(sub_sam)]-ETIME0 ) )
+          FN2O_DRY_nLIN_dNdt0 <- alpha_v*(Cx-C0)  #slope at t=t0
+
+          FN2O_alpha_pval <- summary(nl_model)$parameters['alpha_v','Pr(>|t|)']
+
+          all_par <- data.frame(FN2O_DRY_nLIN_R2,FN2O_DRY_nLIN_RMSE,Cx,alpha_v,ETIME0,
+                                FN2O_DRY_nLIN_dNdt0,FN2O_alpha_pval)
+          est_nlin_mod[[3]] <- nl_model
+          est_nlin[[3]] <-  all_par
+
+        },
+        error=function(e){
+          FN2O_DRY_nLIN_dNdt0 <<- FN2O_DRY_LIN_dNdt
+          FN2O_DRY_nLIN_R2 <<- 0
+          FN2O_DRY_nLIN_RMSE <<-99999
+          Cx <<- 99999
+          alpha_v <<- 99999
+          FN2O_alpha_pval <<- 99999
+          ETIME0 <<-99999
+
+          all_par <<- data.frame(FN2O_DRY_nLIN_R2,FN2O_DRY_nLIN_RMSE,Cx,alpha_v,ETIME0,
+                                 FN2O_DRY_nLIN_dNdt0,FN2O_alpha_pval)
+
+          est_nlin_mod[[3]] <<- NA
+          est_nlin[[3]] <<-  all_par
+        }
+      )
+
+      best_nlin_fit <- which.min(c(est_nlin[[1]]$FN2O_DRY_nLIN_RMSE,
+                                   est_nlin[[2]]$FN2O_DRY_nLIN_RMSE,
+                                   est_nlin[[3]]$FN2O_DRY_nLIN_RMSE))
+
+      nl_model <- est_nlin_mod[[best_nlin_fit]]
+      FN2O_DRY_nLIN_dNdt0 <- est_nlin[[best_nlin_fit]]$FN2O_DRY_nLIN_dNdt0
+      FN2O_DRY_nLIN_R2 <- est_nlin[[best_nlin_fit]]$FN2O_DRY_nLIN_R2
+      FN2O_DRY_nLIN_RMSE <- est_nlin[[best_nlin_fit]]$FN2O_DRY_nLIN_RMSE
+      Cx <- est_nlin[[best_nlin_fit]]$Cx
+      alpha_v <- est_nlin[[best_nlin_fit]]$alpha_v
+      FN2O_alpha_pval <- est_nlin[[best_nlin_fit]]$FN2O_alpha_pval
+      ETIME0 <- est_nlin[[best_nlin_fit]]$ETIME0
+
+      nonlinear_model_n2o[[i]]<-nl_model
+      names(nonlinear_model_n2o)[i]<-as.character(groups[i])
 
       FN2O_DRY_nLIN <- (10*Vcham*P*(1-W0/1000))/(R*Scham*(T0+273.15))* FN2O_DRY_nLIN_dNdt0
 
