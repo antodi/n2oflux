@@ -64,6 +64,17 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
 
       next }
 
+    #check for technical issues
+    n2o_repeats<-1
+    for(rep_dia in 2:length(sub_sam$N2O_DRY)){
+
+      if(sub_sam$N2O_DRY[rep_dia] == sub_sam$N2O_DRY[c(rep_dia-1)] ){
+        n2o_repeats[c(rep_dia)] <- n2o_repeats[c(rep_dia-1)]+1  }else{
+          n2o_repeats[c(rep_dia)] <- 1 }
+
+    }
+    N2O_log_repeats <- max(n2o_repeats)
+
     #adjust ETIME
     if(0 %in% sub_sam$ETIME){sub_sam$ETIME <- sub_sam$ETIME +1 } ###NEW
 
@@ -456,7 +467,8 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
       FCO2_DRY_nLIN <- (10*Vcham*P*(1-W0_co2/1000))/(R*Scham*(T0+273.15))* FCO2_DRY_nLIN_dNdt0
 
       #compile table
-      plot_data <- data.frame(date, time, LABEL,  stop_time, deadband, offset, DIAGNOSIS,Remark,
+      plot_data <- data.frame(date, time, LABEL,  stop_time, deadband, offset,
+                              DIAGNOSIS, N2O_log_repeats, Remark,
                               TA_m, TS1_m, EC2_m, SWC2_m, TS2_m,
                               FN2O_DRY_LIN_dNdt, FN2O_DRY_LIN, FN2O_DRY_LIN_R2, FN2O_DRY_LIN_RMSE,
                               FN2O_LIN_pval,
@@ -470,7 +482,8 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
     }else{
 
       #compile table
-      plot_data <- data.frame(date, time, LABEL, stop_time, deadband, offset, DIAGNOSIS,Remark,
+      plot_data <- data.frame(date, time, LABEL, stop_time, deadband, offset,
+                              DIAGNOSIS, N2O_log_repeats, Remark,
                               TA_m, TS1_m, EC2_m, SWC2_m, TS2_m,
                               FN2O_DRY_LIN_dNdt, FN2O_DRY_LIN, FN2O_DRY_LIN_R2, FN2O_DRY_LIN_RMSE,
                               FN2O_LIN_pval,
