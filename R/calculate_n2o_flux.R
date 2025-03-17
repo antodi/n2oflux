@@ -68,12 +68,14 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
     n2o_repeats<-1
     for(rep_dia in 2:length(sub_sam$N2O_DRY)){
 
-      if(sub_sam$N2O_DRY[rep_dia] == sub_sam$N2O_DRY[c(rep_dia-1)] ){
-        n2o_repeats[c(rep_dia)] <- n2o_repeats[c(rep_dia-1)]+1  }else{
-          n2o_repeats[c(rep_dia)] <- 1 }
+      tryCatch(  #if parameters cannot be estimated, then use dC/dt from linear regression
+        { if(sub_sam$N2O_DRY[rep_dia] == sub_sam$N2O_DRY[c(rep_dia-1)] ){
+          n2o_repeats[c(rep_dia)] <- n2o_repeats[c(rep_dia-1)]+1  }else{
+            n2o_repeats[c(rep_dia)] <- 1 } } ,
+        error=function(e){ n2o_repeats[c(rep_dia)] <- 1 } )
 
     }
-    N2O_log_repeats <- max(n2o_repeats)
+    N2O_log_repeats <- max(n2o_repeats,na.rm = TRUE)
 
     #adjust ETIME
     if(0 %in% sub_sam$ETIME){sub_sam$ETIME <- sub_sam$ETIME +1 } ###NEW
