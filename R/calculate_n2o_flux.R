@@ -10,7 +10,7 @@
 #' @param offset_k The value of the offset (cm) for the collar. If set to "json", the offset will be retrieved from the json file.
 #' @param opt_db The range at which the deadband should be optimized. For intance, if opt_db is set to '20-50', the optimum deadband will tested for all values between 20 and 50sec. The deadband won't be optimzed if set to 'no' (default).
 #' @param clean Value (clean) used in the following formula to detect outliers and discard them. Outliers are defined as observations (obs_i) for which: obs_i > upper_quantile_0.75 + Inter_Quantile x (clean) OR obs_i < lower_quantile_0.25 - Inter_Quantile x (clean). Those observations are discarded. Outliers are not removed by default.
-#' @param show_bar Allow to display a progress bar. If
+#' @param show_bar Allow to display a progress bar. If set to "yes", a bar will display progress. Is set to "no" by default.
 #'
 #' @return A list containing; (1) data_n2o, the calculated fluxes. The column 'deadband' will show the optimized deadband if requested. The dNdt, flux, R squared, and RMSE values for the linear and nonlinear regressions are reported in the column containing _LIN (for linear) or _nLIN (for nonlinear regression) in their header. The pvalue for the linear model and for the alpha term of the non-linear model are reported. The column F_N2O reports the flux for the best model based on the RMSE. If the alpha term of the non-linear model is not significant, the flux estimated based on the linear model is given. (2) linear_model_n2o, the results for the linear regression. (3) nonlinear_model_n2o, the results for the nonlinear regression. (4) When outliers were asked to be removed, a list of the measurements where outliers were detected is returned. All observations for those measurements are saved and the discarded outliers are flagged.
 #' @export
@@ -19,7 +19,7 @@
 #' head(example_n2o_data)
 #' n2o_flux<-calculate_n2o_flux(example_n2o_data,opt_db="20-50",clean=2)
 #' n2o_flux
-calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,offset_k="json",opt_db="no",clean="no", show_bar="yes"){
+calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,offset_k="json",opt_db="no",clean="no", show_bar="no"){
 
   #set objects
   groups <- unique(interaction(data$date,data$LABEL))
@@ -404,6 +404,7 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
     }
 
 
+    # calculate CO2 fluxes
     if( deadband_c > 0 ){
 
       #adjust ETIME
@@ -469,18 +470,6 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
           ETIME0_co2 <<-99999
         }
       )
-
-
-      # if(use_json_parameters == 1){
-      #   # Use values from json file
-      #   Cx_co2 <- unique(sub_sam$C_x_co2)
-      #   alpha_co2 <- unique(sub_sam$alpha_co2)
-      #   ETIME0_co2 <- unique(sub_sam$t_0_co2)
-      #   C0_co2 <- unique(sub_sam$C_0_co2)
-      #
-      #   dN_dtp <- alpha_co2*(Cx_co2-C0_co2)*exp(-alpha_co2*(sub_sam$ETIME_co2[nrow(sub_sam)]-ETIME0_co2 ) )
-      #   FCO2_DRY_nLIN_dNdt0 <- alpha_co2*(Cx_co2-C0_co2)  #slope at t=t0
-      # }
 
       FCO2_DRY_nLIN <- (10*Vcham*P*(1-W0_co2/1000))/(R*Scham*(T0+273.15))* FCO2_DRY_nLIN_dNdt0
 

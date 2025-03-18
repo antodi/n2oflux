@@ -11,7 +11,8 @@ calculate_n2o_flux(
   stop_time_ag = 120,
   offset_k = "json",
   opt_db = "no",
-  clean = "no"
+  clean = "no",
+  show_bar = "no"
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ calculate_n2o_flux(
 \item{opt_db}{The range at which the deadband should be optimized. For intance, if opt_db is set to '20-50', the optimum deadband will tested for all values between 20 and 50sec. The deadband won't be optimzed if set to 'no' (default).}
 
 \item{clean}{Value (clean) used in the following formula to detect outliers and discard them. Outliers are defined as observations (obs_i) for which: obs_i > upper_quantile_0.75 + Inter_Quantile x (clean) OR obs_i < lower_quantile_0.25 - Inter_Quantile x (clean). Those observations are discarded. Outliers are not removed by default.}
+
+\item{show_bar}{Allow to display a progress bar. If set to "yes", a bar will display progress. Is set to "no" by default.}
 }
 \value{
 A list containing; (1) data_n2o, the calculated fluxes. The column 'deadband' will show the optimized deadband if requested. The dNdt, flux, R squared, and RMSE values for the linear and nonlinear regressions are reported in the column containing _LIN (for linear) or _nLIN (for nonlinear regression) in their header. The pvalue for the linear model and for the alpha term of the non-linear model are reported. The column F_N2O reports the flux for the best model based on the RMSE. If the alpha term of the non-linear model is not significant, the flux estimated based on the linear model is given. (2) linear_model_n2o, the results for the linear regression. (3) nonlinear_model_n2o, the results for the nonlinear regression. (4) When outliers were asked to be removed, a list of the measurements where outliers were detected is returned. All observations for those measurements are saved and the discarded outliers are flagged.
