@@ -10,6 +10,7 @@
 #' @param offset_k The value of the offset (cm) for the collar. If set to "json", the offset will be retrieved from the json file.
 #' @param opt_db The range at which the deadband should be optimized. For intance, if opt_db is set to '20-50', the optimum deadband will tested for all values between 20 and 50sec. The deadband won't be optimzed if set to 'no' (default).
 #' @param clean Value (clean) used in the following formula to detect outliers and discard them. Outliers are defined as observations (obs_i) for which: obs_i > upper_quantile_0.75 + Inter_Quantile x (clean) OR obs_i < lower_quantile_0.25 - Inter_Quantile x (clean). Those observations are discarded. Outliers are not removed by default.
+#' @param show_bar Allow to display a progress bar. If
 #'
 #' @return A list containing; (1) data_n2o, the calculated fluxes. The column 'deadband' will show the optimized deadband if requested. The dNdt, flux, R squared, and RMSE values for the linear and nonlinear regressions are reported in the column containing _LIN (for linear) or _nLIN (for nonlinear regression) in their header. The pvalue for the linear model and for the alpha term of the non-linear model are reported. The column F_N2O reports the flux for the best model based on the RMSE. If the alpha term of the non-linear model is not significant, the flux estimated based on the linear model is given. (2) linear_model_n2o, the results for the linear regression. (3) nonlinear_model_n2o, the results for the nonlinear regression. (4) When outliers were asked to be removed, a list of the measurements where outliers were detected is returned. All observations for those measurements are saved and the discarded outliers are flagged.
 #' @export
@@ -18,8 +19,9 @@
 #' head(example_n2o_data)
 #' n2o_flux<-calculate_n2o_flux(example_n2o_data,opt_db="20-50",clean=2)
 #' n2o_flux
-calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,offset_k="json",opt_db="no",clean="no"){
+calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,offset_k="json",opt_db="no",clean="no", show_bar="yes"){
 
+  #set objects
   groups <- unique(interaction(data$date,data$LABEL))
 
   db_default <- deadband
@@ -30,8 +32,22 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
   nonlinear_model_n2o <-list()
   outliers<-list()
 
+  if(show_bar == "yes"){
+    # Initializes the progress bar
+    pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
+                         max = length(groups), # Maximum value of the progress bar
+                         style = 3,    # Progress bar style (also available style = 1 and style = 2)
+                         width = 50,   # Progress bar width. Defaults to getOption("width")
+                         char = "=")   # Character used to create the bar
+    }
+
   for (i in 1:length(groups) ){
-    # print(i)
+
+    if(show_bar=="yes"){
+      #progress bar
+      setTxtProgressBar(pb, i)
+    }
+
     #subset plot data
     date <- strsplit(as.character(groups[i]),"\\.")[[1]][1]
     LABEL <- strsplit(as.character(groups[i]),"\\.")[[1]][2]
@@ -541,6 +557,8 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
   res_n2o_flux$linear_model_n2o<-linear_model_n2o
   res_n2o_flux$nonlinear_model_n2o<-nonlinear_model_n2o
   res_n2o_flux$outliers <- outliers
+
+  if(show_bar=="yes"){close(pb) }#close progress bar
 
   return(res_n2o_flux)
 }
