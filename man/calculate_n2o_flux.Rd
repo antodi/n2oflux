@@ -42,5 +42,7 @@ It also allows to optimize the deadband within a given range. Before steady mixi
 \examples{
 head(example_n2o_data)
 n2o_flux<-calculate_n2o_flux(example_n2o_data,opt_db="20-50",clean=2)
-n2o_flux
+n2o_flux$data_n2o #table with the results
+names(n2o_flux$outliers) #observations containing outliers, empty in this example
+names(n2o_flux$linear_model_n2o) #list of linear models for all observations
 }

@@ -12,7 +12,12 @@
 #' @export
 #'
 #' @examples
-#' plot_res <- plot_n2o_flux<-calculate_n2o_flux(id="20250310.plot10",data=n2o_obs,opt_db="20-50",clean=2)
+#' #' head(example_n2o_data)
+#' plot_res <- plot_n2o_flux<-calculate_n2o_flux(id="20241120.2",data=example_n2o_data,opt_db="20-50",clean=2)
+#' plot_res[[1]] #show result
+#'
+#' plot_res <- plot_n2o_flux<-calculate_n2o_flux(id=c("20241120.2","20241120.1"),data=example_n2o_data,opt_db="20-50",clean=2)
+#' plot_res[[2]] #show result for second id
 plot_fit <- function(id,data,deadband=30,stop_time_ag=120,offset_k="json",opt_db="no",clean="no"){
 
   all_fig <- list()

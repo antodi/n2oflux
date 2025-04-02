@@ -36,5 +36,10 @@ A list containing the plots for all IDs
 Show results of linear and non-linear fits for N2O data, along with deadband and outliers when used
 }
 \examples{
-plot_res <- plot_n2o_flux<-calculate_n2o_flux(id="20250310.plot10",data=n2o_obs,opt_db="20-50",clean=2)
+#' head(example_n2o_data)
+plot_res <- plot_n2o_flux<-calculate_n2o_flux(id="20241120.2",data=example_n2o_data,opt_db="20-50",clean=2)
+plot_res[[1]] #show result
+
+plot_res <- plot_n2o_flux<-calculate_n2o_flux(id=c("20241120.2","20241120.1"),data=example_n2o_data,opt_db="20-50",clean=2)
+plot_res[[2]] #show result for second id
 }
