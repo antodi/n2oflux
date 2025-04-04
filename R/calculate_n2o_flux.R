@@ -425,6 +425,9 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
       sub_sam <- sub_sam[which(sub_sam$ETIME_co2 %in% c(c(1:stop_time)) ),] # select observation length
       sub_sam <- sub_sam[-which(sub_sam$ETIME_co2 %in% c(c(1:deadband_c))  ) ,] # remove deadband
 
+      P <- summary(lm(data = sub_sam[1:10, ], PA ~ ETIME_co2))$coef[1, 1]
+      T0 <- summary(lm(data = sub_sam[1:10, ], TA ~ ETIME_co2))$coef[1, 1]
+
       W0_co2 <- summary(lm(data=sub_sam[1:10,], H2O_co2~ ETIME_co2))$coef[1,1]
       C0_co2 <- summary(lm(data=sub_sam[1:10,], CO2_DRY~ ETIME_co2))$coef[1,1]
 
