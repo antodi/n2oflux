@@ -416,11 +416,10 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
     # calculate CO2 fluxes
     if( deadband_c > 0 ){
 
-      #adjust ETIME
-      if(0 %in% sub_sam$ETIME_co2){sub_sam$ETIME_co2 <- sub_sam$ETIME_co2 +1 } ###NEW
-
       #trim for co2
-      sub_sam <- data[which(data$date == date & data$LABEL == LABEL ),]
+      sub_sam <- data[which(data$date == date & data$LABEL == LABEL ),]      #adjust ETIME
+
+      if(0 %in% sub_sam$ETIME_co2){sub_sam$ETIME_co2 <- sub_sam$ETIME_co2 +1 } ###NEW
 
       sub_sam <- sub_sam[which(sub_sam$ETIME_co2 %in% c(c(1:stop_time)) ),] # select observation length
       sub_sam <- sub_sam[-which(sub_sam$ETIME_co2 %in% c(c(1:deadband_c))  ) ,] # remove deadband
