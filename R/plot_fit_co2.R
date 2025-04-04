@@ -76,6 +76,9 @@ plot_fit_co2 <- function (id, data, deadband_c = 30, stop_time_ag = 120, offset_
 
     FCO2_LIN_pval <- pf(lin_f[1], lin_f[2], lin_f[3], lower.tail = F)
 
+    if (FCO2_LIN_pval<0.001){FCO2_LIN_pval<-"<0.001"}else{
+      FCO2_LIN_pval <- paste0("=",round(as.numeric(FCO2_LIN_pval),4) ) }
+
     res_fm3 <- nls2(CO2_DRY ~ Cx_co2 + (C0_co2 - Cx_co2) * exp(-alpha_co2 * (ETIME_co2 - ETIME0_co2)),
                     start = list(Cx_co2 = c(1000, 5000), alpha_co2 = c(-0.1, 0.1), ETIME0_co2 = c(5, 50)),
                     alg = "brute", data = sub_sam)
