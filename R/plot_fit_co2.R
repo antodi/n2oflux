@@ -117,8 +117,8 @@ plot_fit_co2 <- function (id, data, deadband_c = 30, stop_time_ag = 120, offset_
     }
 
     nlin_val <- paste0("alpha=", round(alpha_co2, 6),
-                       ", etime0=",round(ETIME0, 2),
-                       ", Cx", "=", round(Cx, 1))
+                       ", etime0=",round(ETIME0_co2, 2),
+                       ", Cx", "=", round(Cx_co2, 1))
 
     fig <- ggplot(sub_sam_full, aes(x = ETIME, y = CO2_DRY))
     fig <- fig + geom_point(size = 2, shape = 21, stroke = 1) +
