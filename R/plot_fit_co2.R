@@ -113,11 +113,13 @@ plot_fit_co2 <- function (id, data, deadband_c = 30, stop_time_ag = 120, offset_
       FCO2_alpha_pval <- "<0.001"
     }
     else {
-      FCO2_alpha_pval <- paste0("=", round(as.numeric(FCO2_alpha_pval),
-                                           4))
+      FCO2_alpha_pval <- paste0("=", round(as.numeric(FCO2_alpha_pval),4))
     }
-    nlin_val <- paste0("alpha=", round(alpha_co2, 6), ", etime0=",
-                       round(ETIME0, 2), ", Cx", "=", round(Cx, 1))
+
+    nlin_val <- paste0("alpha=", round(alpha_co2, 6),
+                       ", etime0=",round(ETIME0, 2),
+                       ", Cx", "=", round(Cx, 1))
+
     fig <- ggplot(sub_sam_full, aes(x = ETIME, y = CO2_DRY))
     fig <- fig + geom_point(size = 2, shape = 21, stroke = 1) +
         scale_colour_manual(values = c("black")) +
