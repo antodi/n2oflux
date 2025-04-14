@@ -144,8 +144,7 @@ plot_fit_co2 <- function (id, data, deadband_c = 30, stop_time_ag = 120, offset_
       geom_smooth(data = sub_sam, method = "lm", formula = y ~ x) + guides(color = "none") +
       theme_bw() + theme(axis.text = element_text(size = 12, color = "black"),
                          axis.title = element_text(size = 14, color = "black"),
-                         panel.border = element_rect(linewidth = 1.5),
-                         plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
+                         panel.border = element_rect(linewidth = 1.5) )
 
     if (FCO2_DRY_nLIN_RMSE != 99999) {
       fig <- fig + geom_line(data = sub_sam, aes(ETIME,

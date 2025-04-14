@@ -347,8 +347,7 @@ plot_fit <- function(id,data,deadband=30,stop_time_ag=120,offset_k="json",opt_db
       theme_bw()+
       theme(axis.text=element_text(size=12,color="black"),
             axis.title=element_text(size=14,color="black"),
-            panel.border = element_rect(linewidth =  1.5),
-            plot.margin = margin(.5, .5, .5, .5, "cm") )
+            panel.border = element_rect(linewidth =  1.5)  )
 
     if(FN2O_DRY_nLIN_RMSE != 99999){
       fig <- fig +  geom_line(data=sub_sam,aes(ETIME,predict(nl_model) ),
