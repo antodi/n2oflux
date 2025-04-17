@@ -1,4 +1,4 @@
-#' Show results of linear and non-linear fits for CO2 data, along with deadband and outliers when used.
+#' Show results of linear and non-linear fits for CO2 data only, along with deadband and outliers when used.
 #'
 #' @param id The ID (written as date.LABEL) of measurements to plot. Several measurements can be processed at the same time.
 #' @param data The data containing the measurements seconds by seconds, given by the process_json_files function.
