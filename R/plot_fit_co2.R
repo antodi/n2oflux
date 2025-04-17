@@ -1,6 +1,6 @@
 #' Show results of linear and non-linear fits for CO2 data only, along with deadband and outliers when used.
 #'
-#' @param id The ID (written as date.LABEL) of measurements to plot. Several measurements can be processed at the same time.
+#' @param id The ID (written as date.LABEL) of measurements to plot with CO2 data. Several measurements can be processed at the same time.
 #' @param data The data containing the measurements seconds by seconds, given by the process_json_files function.
 #' @param deadband_c The desired value (sec) for the deadband. CO2 observations before that time will be discarded.
 #' @param stop_time_ag The duration of observation (sec).
