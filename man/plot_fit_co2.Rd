@@ -2,16 +2,16 @@
 % Please edit documentation in R/plot_fit_co2.R
 \name{plot_fit_co2}
 \alias{plot_fit_co2}
-\title{Show results of linear and non-linear fits for CO2 data, along with deadband and outliers when used}
+\title{Show results of linear and non-linear fits for CO2 data, along with deadband and outliers when used.}
 \usage{
 plot_fit_co2(id, data, deadband_c = 30, stop_time_ag = 120, offset_k = "json")
 }
 \arguments{
-\item{id}{The ID (written as date.LABEL) of measurements to plot. Several measurements can be processed at the same time.}
+\item{id}{The ID (written as date.LABEL) of measurements to plot with CO2 data. Several measurements can be processed at the same time.}
 
 \item{data}{The data containing the measurements seconds by seconds, given by the process_json_files function.}
 
-\item{deadband_c}{The desired value (sec) for the deadband. N2O observations before that time will be discarded.}
+\item{deadband_c}{The desired value (sec) for the deadband. CO2 observations before that time will be discarded.}
 
 \item{stop_time_ag}{The duration of observation (sec).}
 
@@ -21,5 +21,5 @@ plot_fit_co2(id, data, deadband_c = 30, stop_time_ag = 120, offset_k = "json")
 A list containing the plots for all IDs
 }
 \description{
-Show results of linear and non-linear fits for CO2 data, along with deadband and outliers when used
+Show results of linear and non-linear fits for CO2 data, along with deadband and outliers when used.
 }
