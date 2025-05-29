@@ -66,6 +66,7 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
                                 "FN2O_LIN_pval"=99999,
                                 "FN2O_DRY_nLIN_dNdt0"=99999, "FN2O_DRY_nLIN"=99999,"FN2O_DRY_nLIN_R2"=99999, "FN2O_DRY_nLIN_RMSE"=99999,
                                 "Cx"=99999,"alpha_v"=99999,"FN2O_alpha_pval"=99999 ,"ETIME0"=99999,"N2O_CV"=99999,
+                                "min_N2O"=99999,"max_N2O"=99999,"delta_N2O"=99999,
                                 "FCO2_DRY_LIN_dNdt"=99999, "FCO2_DRY_LIN"=99999, "FCO2_DRY_LIN_R2"=99999, "FCO2_DRY_LIN_RMSE"=99999,
                                 "FCO2_LIN_pval"=99999,
                                 "FCO2_DRY_nLIN_dNdt0"=99999, "FCO2_DRY_nLIN"=99999, "FCO2_DRY_nLIN_R2"=99999, "FCO2_DRY_nLIN_RMSE"=99999,
@@ -81,7 +82,8 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
                                 "FN2O_DRY_LIN_dNdt"=99999, "FN2O_DRY_LIN"=99999, "FN2O_DRY_LIN_R2"=99999, "FN2O_DRY_LIN_RMSE"=99999,
                                 "FN2O_LIN_pval"=99999,
                                 "FN2O_DRY_nLIN_dNdt0"=99999, "FN2O_DRY_nLIN"=99999,"FN2O_DRY_nLIN_R2"=99999, "FN2O_DRY_nLIN_RMSE"=99999,
-                                "Cx"=99999,"alpha_v"=99999,"FN2O_alpha_pval"=99999 ,"ETIME0"=99999,"N2O_CV"=99999 )
+                                "Cx"=99999,"alpha_v"=99999,"FN2O_alpha_pval"=99999 ,"ETIME0"=99999,"N2O_CV"=99999,
+                                "min_N2O"=99999,"max_N2O"=99999,"delta_N2O"=99999)
 
       }
 
@@ -170,6 +172,9 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
       if( coef(lm_beg)[[2]] > 0){ deadband <- db_default }
     }else{deadband<-deadband}
 
+
+
+    #set volumes
     Scham <- unique(sub_sam$Area) #cm2
     ChamVolume <- unique(sub_sam$ChamVolume) #cm3
     IrgaVolume <- unique(sub_sam$IrgaVolume) # = analyzer volume (cm3) + tubing (cm) * tubing area (0.158 cm2)
@@ -212,6 +217,11 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
       #trim for n2o
       sub_sam <- sub_sam[which(sub_sam$ETIME %in% c(c(1:stop_time)) ),] # select observation length
       sub_sam <- sub_sam[-which(sub_sam$ETIME %in% c(c(1:deadband))  ) ,] # remove deadband
+
+      #calculate maximum delta for detection threshold
+      min_N2O <- min(sub_sam$N2O_DRY,na.rm = TRUE)
+      max_N2O <- max(sub_sam$N2O_DRY,na.rm = TRUE)
+      delta_N2O <- max_N2O - min_N2O
 
       #extract chamber condition
       TA_m <- mean(sub_sam$TA[which(sub_sam$TA<100)])
@@ -491,7 +501,7 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
                               FN2O_DRY_LIN_dNdt, FN2O_DRY_LIN, FN2O_DRY_LIN_R2, FN2O_DRY_LIN_RMSE,
                               FN2O_LIN_pval,
                               FN2O_DRY_nLIN_dNdt0, FN2O_DRY_nLIN,FN2O_DRY_nLIN_R2, FN2O_DRY_nLIN_RMSE,
-                              Cx,alpha_v,FN2O_alpha_pval,ETIME0,N2O_CV,
+                              Cx,alpha_v,FN2O_alpha_pval,ETIME0,N2O_CV,min_N2O,max_N2O,delta_N2O,
                               FCO2_DRY_LIN_dNdt, FCO2_DRY_LIN, FCO2_DRY_LIN_R2, FCO2_DRY_LIN_RMSE,
                               FCO2_LIN_pval,
                               FCO2_DRY_nLIN_dNdt0, FCO2_DRY_nLIN, FCO2_DRY_nLIN_R2, FCO2_DRY_nLIN_RMSE,
@@ -506,7 +516,7 @@ calculate_n2o_flux <- function(data,deadband=30,deadband_c=0,stop_time_ag=120,of
                               FN2O_DRY_LIN_dNdt, FN2O_DRY_LIN, FN2O_DRY_LIN_R2, FN2O_DRY_LIN_RMSE,
                               FN2O_LIN_pval,
                               FN2O_DRY_nLIN_dNdt0, FN2O_DRY_nLIN,FN2O_DRY_nLIN_R2, FN2O_DRY_nLIN_RMSE,
-                              Cx,alpha_v,FN2O_alpha_pval,ETIME0,N2O_CV )
+                              Cx,alpha_v,FN2O_alpha_pval,ETIME0,N2O_CV,min_N2O,max_N2O,delta_N2O )
     }
 
 
