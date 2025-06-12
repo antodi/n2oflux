@@ -24,6 +24,7 @@ process_json_files = function(filepath) {
     Offset<-c()
     IrgaVolume<-c()
     ChamVolume<-c()
+    InstrumentSerialNumber<-c()
 
     F_0<-c()
     t_0<-c()
@@ -138,6 +139,7 @@ process_json_files = function(filepath) {
           Offset<-Offset[-length(Offset)]
           ChamVolume<-ChamVolume[-length(ChamVolume)]
           IrgaVolume<-IrgaVolume[-length(IrgaVolume)]
+          InstrumentSerialNumber <- InstrumentSerialNumber[-length(InstrumentSerialNumber)]
           Remark<-Remark[-length(Remark)]
 
           tims_dat<-tims_dat[-length(tims_dat)]
@@ -180,6 +182,11 @@ process_json_files = function(filepath) {
 
       ## compile data from li7820
       if(InstrumentModel == "LI-7820" ){
+
+        if(str_detect(line, "InstrumentSerialNumber")==TRUE ){
+          InstrumentSerialNumber <- c(InstrumentSerialNumber,
+                                      str_extract(line, "(Number\":\")([A-Z0-9\\-.]+)", group = 2) ) ######
+        }
 
         if(str_detect(line, "Date\":")==TRUE & header=="reading" ){
           line<-gsub("\"","",line)
@@ -542,7 +549,7 @@ process_json_files = function(filepath) {
     if(two_instruments == "TRUE" ){
 
       #compile data
-      metadata<-rbind(plot,Date,DeadBand,Area,Offset,ChamVolume,IrgaVolume,IrgaVolume_li870,Remark)
+      metadata<-rbind(plot,Date,DeadBand,Area,Offset,ChamVolume,IrgaVolume,IrgaVolume_li870,InstrumentSerialNumber,Remark)
       nonlinear_para<-rbind(F_0,t_0,C_0,alpha_v,C_x,F_0_co2,t_0_co2,C_0_co2,alpha_co2,C_x_co2)
       all_n2o <- list("metadata"=metadata,
                       "nonlinear_para"=nonlinear_para,
@@ -636,6 +643,7 @@ process_json_files = function(filepath) {
                            "ChamVolume"= all_n2o$metadata["ChamVolume",i],
                            "IrgaVolume"= all_n2o$metadata["IrgaVolume",i],
                            "IrgaVolume_li870"= all_n2o$metadata["IrgaVolume_li870",i],
+                           "InstrumentSerialNumber"=all_n2o$metadata["InstrumentSerialNumber",i],
                            "Remark"= all_n2o$metadata["Remark",i],
 
                            "F_0"= all_n2o$nonlinear_para["F_0",i],
@@ -655,7 +663,7 @@ process_json_files = function(filepath) {
     }else{
 
       #compile data
-      metadata<-rbind(plot,Date,DeadBand,Area,Offset,ChamVolume,IrgaVolume,Remark)
+      metadata<-rbind(plot,Date,DeadBand,Area,Offset,ChamVolume,IrgaVolume,InstrumentSerialNumber,Remark)
 
       nonlinear_para<-rbind(F_0,t_0,C_0,alpha_v,C_x)
       all_n2o <- list("metadata"=metadata,
@@ -676,6 +684,7 @@ process_json_files = function(filepath) {
                          "Offset"= all_n2o$metadata["Offset",i],
                          "ChamVolume"= all_n2o$metadata["ChamVolume",i],
                          "IrgaVolume"= all_n2o$metadata["IrgaVolume",i],
+                         "InstrumentSerialNumber"=all_n2o$metadata["InstrumentSerialNumber",i],
                          "Remark"= all_n2o$metadata["Remark",i],
 
                          "F_0"= all_n2o$nonlinear_para["F_0",i],
@@ -704,7 +713,8 @@ process_json_files = function(filepath) {
 
 
     #set to numeric
-    cols.num <- colnames(data_n2o_json)[-which(colnames(data_n2o_json) %in% c("LABEL","DATE_TIME", "Remark") )]
+    cols.num <- colnames(data_n2o_json)[-which(colnames(data_n2o_json) %in% c("LABEL","DATE_TIME",
+                                                                              "Remark","InstrumentSerialNumber") )]
     data_n2o_json[cols.num] <- sapply(data_n2o_json[cols.num],as.numeric)
 
     #add date column
